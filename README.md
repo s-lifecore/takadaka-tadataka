@@ -107,7 +107,7 @@ type AIResult = {
 
 ```plaintext
 drawings/{drawingId}
-  uid:      string       // Anonymous Auth UID
+  uuid:     string       // Anonymous Auth UUID
   theme:    string       // お題
   trail:    TrailPoint[] // 軌跡
   imageUrl: string       // Storage URL
