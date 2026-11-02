@@ -85,7 +85,7 @@
 
 ### 軌跡データ
 
-```plaintext
+```ts
 type TrailPoint = {
   lat: number;
   lng: number;
@@ -97,9 +97,9 @@ type TrailPoint = {
 
 ```ts
 type AIResult = {
-  score: number;  // 0-100
-  guess: string;  // AIが判定した絵の内容
-  reason: string; // 採点理由
+  score: number;  // 0-100 単位: [%]
+  // guess: string;  // AIが判定した絵の内容
+  reason: string; // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
 };
 ```
 
@@ -195,3 +195,8 @@ src/
     ├── Game        # プレイ中画面（フロントA中心）
     └── Result      # 結果画面（フロントB + AI判定）
 ```
+
+## GPSと位置情報の精度
+
+- GPSは環境によって精度が大きく変わる（建物の影・地下・トンネルなど）
+- GPS 5桁（例：35.123456, 139.123456）で初期検証
