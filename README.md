@@ -120,7 +120,7 @@ drawings/{drawingId}
 ## セットアップ
 
 ### 必要なもの
-- Node.js 20+
+- Node.js
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
 
