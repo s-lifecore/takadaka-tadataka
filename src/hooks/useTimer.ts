@@ -32,7 +32,9 @@ export function useTimer(initialSeconds: number) {
         return prev - 1
       })
     }, 1000)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [running])
 
   const expired = remaining === 0
