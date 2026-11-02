@@ -15,17 +15,17 @@
 
 | 役割 | 担当 | 主な責務 |
 |------|------|----------|
-| PM | Takumi Sudo `tymtkok.sudo@gmail.com` | スコープ管理、画面遷移設計、実地テスト、発表 |
-| バックエンド | rikuto `rikut0904.site` | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
-| フロントA（地図・GPS） | kouyuu `kouyuu0707@gmail.com` | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
-| フロントB（画面・描画） | wujingkeshu `wujingkeshu36@gmail.com` | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
-| AI判定 | pikachu_ki `pikachu_ki_0170@icloud.com` | ルーブリック設計、プロンプト調整、採点ブレ検証 |
+| PM | @s-lifecore | スコープ管理、画面遷移設計、実地テスト、発表 |
+| バックエンド | @rikut0904 | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
+| フロントA（地図・GPS） | @kouyuu0707 | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
+| フロントB（画面・描画） | @katsuki812 | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
+| AI判定 | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証 |
 
 ---
 
 ## 画面遷移
 
-```
+```plaintext
 ホーム画面
   └─ ゲーム開始
        └─ カウントダウン (3秒)
@@ -41,6 +41,7 @@
 ## 最小機能要件（MVP）
 
 ### シングルプレイ
+
 - [x] 位置情報の取得（watchPosition）
 - [x] 地図上に軌跡をリアルタイム描画
 - [x] お題の表示（固定：「りんご」）
@@ -51,11 +52,13 @@
 - [x] 結果の Firestore 保存
 
 ### 歩きスマホ対策
+
 - [ ] Screen Wake Lock API で画面ON維持
 - [ ] DeviceOrientation API で画面を見ているか検出
 - [ ] 検出中は軌跡を描かない（警告表示）
 
 ### PWA
+
 - [ ] manifest.json 設定
 - [ ] Service Worker（vite-plugin-pwa）
 
@@ -81,6 +84,7 @@
 ## データ形式（全員で事前合意）
 
 ### 軌跡データ
+
 ```ts
 type TrailPoint = {
   lat: number;
@@ -90,18 +94,20 @@ type TrailPoint = {
 ```
 
 ### AI返り値
+
 ```ts
 type AIResult = {
-  score: number;  // 0-100
-  guess: string;  // AIが判定した絵の内容
-  reason: string; // 採点理由
+  score: number;  // 0-100 単位: [%]
+  // guess: string;  // AIが判定した絵の内容
+  reason: string; // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
 };
 ```
 
 ### Firestore スキーマ（予定）
-```
+
+```plaintext
 drawings/{drawingId}
-  uid:      string       // Anonymous Auth UID
+  uuid:     string       // Anonymous Auth UUID
   theme:    string       // お題
   trail:    TrailPoint[] // 軌跡
   imageUrl: string       // Storage URL
@@ -114,9 +120,16 @@ drawings/{drawingId}
 ## セットアップ
 
 ### 必要なもの
-- Node.js 20+
+- Node.js
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
+
+### パッケージバージョン
+
+```bash
+npm -v # 12.2.1
+node -v # 24.22.2
+```
 
 ### インストール
 
@@ -164,7 +177,7 @@ npm run dev
 
 ## ディレクトリ構成
 
-```
+```plaintext
 src/
 ├── types/          # 共通型定義（TrailPoint, AIResult など）
 ├── components/     # 再利用UIコンポーネント
@@ -182,3 +195,8 @@ src/
     ├── Game        # プレイ中画面（フロントA中心）
     └── Result      # 結果画面（フロントB + AI判定）
 ```
+
+## GPSと位置情報の精度
+
+- GPSは環境によって精度が大きく変わる（建物の影・地下・トンネルなど）
+- GPS 5桁（例：35.12345, 139.12345）で初期検証
