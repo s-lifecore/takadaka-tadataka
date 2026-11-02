@@ -35,7 +35,10 @@ export function Game({ onFinish }: Props) {
       <div className="flex items-center justify-between px-4 py-3 bg-white shadow z-10">
         <span className="text-lg font-bold">🍎 りんご</span>
         <Timer remaining={remaining} />
-        <button onClick={handleFinish} className="text-sm text-gray-400 underline">
+        <button
+          onClick={handleFinish}
+          className="text-sm text-gray-400 underline"
+        >
           完了
         </button>
       </div>

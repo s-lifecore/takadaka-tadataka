@@ -18,12 +18,16 @@ export function TrailCanvas({ trail, size = 512, onReady }: Props) {
 
     const lats = trail.map((p) => p.lat)
     const lngs = trail.map((p) => p.lng)
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats)
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs)
+    const minLat = Math.min(...lats),
+      maxLat = Math.max(...lats)
+    const minLng = Math.min(...lngs),
+      maxLng = Math.max(...lngs)
     const pad = 40
 
-    const toX = (lng: number) => pad + ((lng - minLng) / (maxLng - minLng || 1)) * (size - pad * 2)
-    const toY = (lat: number) => size - pad - ((lat - minLat) / (maxLat - minLat || 1)) * (size - pad * 2)
+    const toX = (lng: number) =>
+      pad + ((lng - minLng) / (maxLng - minLng || 1)) * (size - pad * 2)
+    const toY = (lat: number) =>
+      size - pad - ((lat - minLat) / (maxLat - minLat || 1)) * (size - pad * 2)
 
     ctx.clearRect(0, 0, size, size)
     ctx.fillStyle = '#fff'
@@ -40,8 +44,17 @@ export function TrailCanvas({ trail, size = 512, onReady }: Props) {
     }
     ctx.stroke()
 
-    onReady?.(canvas.toDataURL('image/png').replace('data:image/png;base64,', ''))
+    onReady?.(
+      canvas.toDataURL('image/png').replace('data:image/png;base64,', ''),
+    )
   }, [trail, size, onReady])
 
-  return <canvas ref={canvasRef} width={size} height={size} className="w-full h-full" />
+  return (
+    <canvas
+      ref={canvasRef}
+      width={size}
+      height={size}
+      className="w-full h-full"
+    />
+  )
 }

@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Game } from './pages/Game'
 import { Home } from './pages/Home'
+import { Theme } from './pages/Theme'
 import { Result } from './pages/Result'
 import type { TrailPoint } from './types'
 
-type Page = 'home' | 'game' | 'result'
+type Page = 'home' | 'theme' | 'game' | 'result'
 
 export function App() {
   const [page, setPage] = useState<Page>('home')
@@ -20,7 +21,9 @@ export function App() {
     setPage('result')
   }
 
-  if (page === 'home') return <Home onStart={handleStart} />
+  if (page === 'home') return <Home onStart={() => setPage('theme')} />
+  if (page === 'theme')
+    return <Theme onBack={() => setPage('home')} onStart={handleStart} />
   if (page === 'game') return <Game onFinish={handleFinish} />
   return <Result trail={trail} onRetry={handleStart} />
 }

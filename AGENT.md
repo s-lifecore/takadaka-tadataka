@@ -53,19 +53,19 @@ GPSの軌跡点は次の形式です。
 
 ```ts
 type TrailPoint = {
-  lat: number;
-  lng: number;
-  t: number; // Unixタイムスタンプ（ミリ秒）
-};
+  lat: number
+  lng: number
+  t: number // Unixタイムスタンプ（ミリ秒）
+}
 ```
 
 AIの採点結果は、0から100までのスコアと理由を持ちます。プロンプトや結果画面を変更する場合も、この契約を維持してください。
 
 ```ts
 type AIResult = {
-  score: number;
-  reason: string;
-};
+  score: number
+  reason: string
+}
 ```
 
 Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uuid`、`theme`、`trail`、`imageUrl`、`result`、`createdAt`です。
