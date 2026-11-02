@@ -25,7 +25,7 @@
 
 ## 画面遷移
 
-```
+```plaintext
 ホーム画面
   └─ ゲーム開始
        └─ カウントダウン (3秒)
@@ -41,6 +41,7 @@
 ## 最小機能要件（MVP）
 
 ### シングルプレイ
+
 - [x] 位置情報の取得（watchPosition）
 - [x] 地図上に軌跡をリアルタイム描画
 - [x] お題の表示（固定：「りんご」）
@@ -51,11 +52,13 @@
 - [x] 結果の Firestore 保存
 
 ### 歩きスマホ対策
+
 - [ ] Screen Wake Lock API で画面ON維持
 - [ ] DeviceOrientation API で画面を見ているか検出
 - [ ] 検出中は軌跡を描かない（警告表示）
 
 ### PWA
+
 - [ ] manifest.json 設定
 - [ ] Service Worker（vite-plugin-pwa）
 
@@ -81,7 +84,8 @@
 ## データ形式（全員で事前合意）
 
 ### 軌跡データ
-```ts
+
+```plaintext
 type TrailPoint = {
   lat: number;
   lng: number;
@@ -90,6 +94,7 @@ type TrailPoint = {
 ```
 
 ### AI返り値
+
 ```ts
 type AIResult = {
   score: number;  // 0-100
@@ -99,7 +104,8 @@ type AIResult = {
 ```
 
 ### Firestore スキーマ（予定）
-```
+
+```plaintext
 drawings/{drawingId}
   uid:      string       // Anonymous Auth UID
   theme:    string       // お題
@@ -117,6 +123,13 @@ drawings/{drawingId}
 - Node.js 20+
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
+
+### パッケージバージョン
+
+```bash
+npm -v # 12.2.1
+node -v # 24.22.2
+```
 
 ### インストール
 
@@ -164,7 +177,7 @@ npm run dev
 
 ## ディレクトリ構成
 
-```
+```plaintext
 src/
 ├── types/          # 共通型定義（TrailPoint, AIResult など）
 ├── components/     # 再利用UIコンポーネント
