@@ -15,11 +15,11 @@
 
 | 役割 | 担当 | 主な責務 |
 |------|------|----------|
-| PM | Takumi Sudo `tymtkok.sudo@gmail.com` | スコープ管理、画面遷移設計、実地テスト、発表 |
-| バックエンド | rikuto `rikut0904.site` | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
-| フロントA（地図・GPS） | kouyuu `kouyuu0707@gmail.com` | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
-| フロントB（画面・描画） | wujingkeshu `wujingkeshu36@gmail.com` | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
-| AI判定 | pikachu_ki `pikachu_ki_0170@icloud.com` | ルーブリック設計、プロンプト調整、採点ブレ検証 |
+| PM | @s-lifecore | スコープ管理、画面遷移設計、実地テスト、発表 |
+| バックエンド | @rikut0904 | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
+| フロントA（地図・GPS） | @kouyuu0707 | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
+| フロントB（画面・描画） | @katsuki812 | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
+| AI判定 | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証 |
 
 ---
 
