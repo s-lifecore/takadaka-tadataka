@@ -8,18 +8,18 @@
 
 ```
 main        ← 動くものだけ置く。直接 push 禁止
-└─ develop  ← 作業の合流点。ここに PR を出す
-   ├─ feature/map-view       （フロントA）
-   ├─ feature/trail-canvas   （フロントB）
-   ├─ feature/gemini-judge   （AI判定）
-   └─ feature/firebase-setup （バックエンド）
+├─ feat/map-view       （フロントA）
+├─ feat/trail-canvas   （フロントB）
+├─ feat/gemini-judge   （AI判定）
+└─ feat/firebase-setup （バックエンド）
 ```
 
 | ブランチ | 誰が使う | マージ先 |
 |----------|----------|----------|
 | `main` | PM がリリース時のみ | — |
-| `develop` | 全員の合流点 | `main` |
-| `feature/*` | 各担当が作業 | `develop` |
+| `feat/*` | 各担当が作業 | `main` |
+
+※ブランチ命名規則は @CONTRIBUTING.md を参照してください。
 
 ---
 
@@ -32,12 +32,12 @@ npm install
 cp .env.example .env.local   # Firebaseキーを記入（バックエンド担当から受け取る）
 ```
 
-develop ブランチを手元に持ってくる：
+main ブランチを手元に持ってくる：
 
 ```bash
-git switch develop
+git switch main
 # なければ↓
-git switch -c develop origin/develop
+git switch -c main origin/main
 ```
 
 ---
@@ -47,10 +47,10 @@ git switch -c develop origin/develop
 ### 1. 作業前：最新を取り込む
 
 ```bash
-git switch develop
+git switch main
 git pull
-git switch feature/自分のブランチ
-git merge develop      # develop の変更を取り込む
+git switch feat/自分のブランチ
+git merge main      # main の変更を取り込む
 ```
 
 ### 2. 作業中：こまめにコミット
@@ -60,33 +60,25 @@ git add src/components/MapView.tsx   # ファイルを指定して add
 git commit -m "feat: 軌跡のポリライン描画を追加"
 ```
 
-コミットメッセージのプレフィックス：
+コミットメッセージのプレフィックス： @CONTRIBUTING.md を参照してください。
 
-| prefix | 使いどころ |
-|--------|-----------|
-| `feat:` | 新機能 |
-| `fix:` | バグ修正 |
-| `style:` | 見た目・CSS |
-| `refactor:` | 動作を変えない整理 |
-| `chore:` | 設定・依存関係 |
-
-### 3. develop に PR を出す
+### 3. main に PR を出す
 
 ```bash
-git push origin feature/自分のブランチ
+git push origin feat/自分のブランチ
 ```
 
-GitHub 上で **develop** 向けに Pull Request を作成。  
+GitHub 上で **main** 向けに Pull Request を作成。  
 タイトル例：`feat: 地図表示と軌跡描画の実装`
 
 ### 4. レビュー・マージ
 
 - バックエンド担当がコードレビュー
-- 承認されたら develop にマージ（Squash merge 推奨）
+- 承認されたら main にマージ（Squash merge 推奨）
 - マージ後、手元のブランチを最新に合わせる：
 
 ```bash
-git switch develop
+git switch main
 git pull
 ```
 
@@ -95,23 +87,23 @@ git pull
 ## 自分のブランチを作るとき
 
 ```bash
-git switch develop
+git switch main
 git pull
-git switch -c feature/ブランチ名
+git switch -c feat/ブランチ名
 ```
 
 ブランチ名の例：
-- `feature/map-view` — 地図・GPS
-- `feature/trail-canvas` — Canvas描画・PWA
-- `feature/gemini-judge` — AI判定
-- `feature/firebase-setup` — Firebase設定
+- `feat/map-view` — 地図・GPS
+- `feat/trail-canvas` — Canvas描画・PWA
+- `feat/gemini-judge` — AI判定
+- `feat/firebase-setup` — Firebase設定
 
 ---
 
 ## コンフリクトが起きたら
 
 ```bash
-git merge develop   # コンフリクトが出る
+git merge main   # コンフリクトが出る
 # エディタで <<<< ==== >>>> の部分を手で直す
 git add 直したファイル
 git commit
