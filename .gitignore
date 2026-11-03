@@ -4,3 +4,5 @@ dist
 .env.*.local
 
 *.js
+
+!eslint.config.js
