@@ -13,10 +13,7 @@ const RUBRIC = `
 必ずJSON形式で返すこと: { "score": number, "guess": string, "reason": string }
 `
 
-export async function judgeDrawing(
-  imageBase64: string,
-  theme: string,
-): Promise<AIResult> {
+export async function judgeDrawing(imageBase64: string, theme: string): Promise<AIResult> {
   const body = {
     contents: [
       {
