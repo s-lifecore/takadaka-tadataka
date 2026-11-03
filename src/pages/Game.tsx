@@ -61,6 +61,11 @@ function PlayingGame({ onFinish }: Props) {
     return () => stopGPS()
   }, [startGPS, startTimer, stopGPS])
 
+  const handleFinish = useCallback(() => {
+    stopGPS()
+    onFinish(trail)
+  }, [onFinish, stopGPS, trail])
+
   useEffect(() => {
     if (expired) handleFinish()
   }, [expired, handleFinish])
@@ -75,9 +80,7 @@ function PlayingGame({ onFinish }: Props) {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-100 text-red-700 text-sm px-4 py-2">{error}</div>
-      )}
+      {error && <div className="bg-red-100 text-red-700 text-sm px-4 py-2">{error}</div>}
 
       <div className="flex-1 relative">
         <MapView trail={trail} />

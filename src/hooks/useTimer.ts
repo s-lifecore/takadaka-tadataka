@@ -50,6 +50,19 @@ export function useTimer(initialSeconds: number) {
       document.removeEventListener('visibilitychange', updateRemaining)
       window.removeEventListener('pageshow', updateRemaining)
     }
+
+    intervalRef.current = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          setRunning(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [running])
 
   const expired = remaining === 0
