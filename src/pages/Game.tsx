@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MapView } from '../components/MapView'
 import { Timer } from '../components/Timer'
 import { useGeolocation } from '../hooks/useGeolocation'
@@ -12,19 +12,54 @@ type Props = {
 }
 
 export function Game({ onFinish }: Props) {
+  const [ready, setReady] = useState(false)
+  const handleReady = useCallback(() => setReady(true), [])
+
+  if (!ready) return <StartCountdown onReady={handleReady} />
+  return <PlayingGame onFinish={onFinish} />
+}
+
+function StartCountdown({ onReady }: { onReady: () => void }) {
+  const { remaining, expired, start } = useTimer(3)
+
+  useEffect(() => {
+    start()
+  }, [start])
+
+  useEffect(() => {
+    if (expired) onReady()
+  }, [expired, onReady])
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen gap-6 bg-white">
+      <p className="text-lg font-bold">🍎 りんご</p>
+      <div role="status" aria-live="assertive" aria-atomic="true" className="text-center">
+        <p className="text-gray-600 mb-4">ゲーム開始まで</p>
+        <p className="text-8xl font-mono font-bold tabular-nums">{remaining || 'スタート！'}</p>
+      </div>
+      <p className="text-sm text-gray-500">画面を見ながら歩かないでください</p>
+    </div>
+  )
+}
+
+function PlayingGame({ onFinish }: Props) {
   const { trail, error, start: startGPS, stop: stopGPS } = useGeolocation()
-  const { remaining, expired, start: startTimer } = useTimer(GAME_SECONDS)
+  const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
+  const finishedRef = useRef(false)
+
+  const handleFinish = useCallback(() => {
+    if (finishedRef.current) return
+    finishedRef.current = true
+    stopTimer()
+    stopGPS()
+    onFinish(trail)
+  }, [stopTimer, stopGPS, onFinish, trail])
 
   useEffect(() => {
     startGPS()
     startTimer()
     return () => stopGPS()
   }, [startGPS, startTimer, stopGPS])
-
-  const handleFinish = useCallback(() => {
-    stopGPS()
-    onFinish(trail)
-  }, [onFinish, stopGPS, trail])
 
   useEffect(() => {
     if (expired) handleFinish()
