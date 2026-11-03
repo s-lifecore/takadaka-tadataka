@@ -21,14 +21,25 @@ export function useGeolocation() {
   const [error, setError] = useState<string | null>(null)
   const watchIdRef = useRef<number | null>(null)
   const lastRef = useRef<TrailPoint | null>(null)
+  const isPausedRef = useRef(false)
+
+  const pause = useCallback(() => {
+    isPausedRef.current = true
+  }, [])
+
+  const resume = useCallback(() => {
+    isPausedRef.current = false
+  }, [])
 
   const start = useCallback(() => {
+    if (watchIdRef.current !== null) return
     if (!navigator.geolocation) {
       setError('このブラウザは位置情報に対応していません')
       return
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (isPausedRef.current) return
         if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {
           lat: pos.coords.latitude,
@@ -51,5 +62,5 @@ export function useGeolocation() {
     }
   }, [])
 
-  return { trail, error, start, stop }
+  return { trail, error, start, stop, pause, resume }
 }
