@@ -19,7 +19,7 @@ export async function createDrawing() {
   const user = await ensureUser()
   const drawing = doc(collection(db, 'drawings'))
   await setDoc(drawing, {
-    uuid: user.uid,
+    uid: user.uid,
     theme: 'りんご',
     trail: [],
     createdAt: serverTimestamp(),
