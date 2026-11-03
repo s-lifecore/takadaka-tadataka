@@ -1,8 +1,9 @@
 type Props = {
   onStart: () => void
+  onCollection: () => void
 }
 
-export function Home({ onStart }: Props) {
+export function Home({ onStart, onCollection }: Props) {
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-8 p-6 bg-white">
       <h1 className="text-3xl font-bold">高々忠敬</h1>
@@ -24,6 +25,13 @@ export function Home({ onStart }: Props) {
         className="w-full max-w-sm py-4 bg-black text-white text-lg font-semibold rounded-2xl"
       >
         スタート
+      </button>
+      <button
+        type="button"
+        onClick={onCollection}
+        className="w-full max-w-sm py-4 border border-[#c89f76] bg-[#fffaf0] text-[#604733] text-lg font-semibold rounded-2xl"
+      >
+        作品帳
       </button>
     </div>
   )
