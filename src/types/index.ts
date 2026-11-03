@@ -13,8 +13,7 @@ export type AIResult = {
 export type Drawing = {
   uid: string
   theme: string
-  trail: TrailPoint[]
-  imageUrl: string
+  imagePublicId: string
   result: AIResult
-  createdAt: number
+  createdAt: string
 }
