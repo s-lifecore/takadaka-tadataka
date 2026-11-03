@@ -41,12 +41,19 @@
 | ページ | URL | 担当 | 説明 |
 |--------|-----|------|------|
 | ホーム | `/` | フロントB | ゲーム開始・作品帳・あそびかた（設定はダイアログ） |
+| カウントダウン | `/map` | フロントA | 3秒カウントダウン・Firestore drawingId 生成 |
 | プレイ中（地図） | `/map/[id]` | フロントA | 地図・軌跡描画・タイマー |
 | 結果 | `/result/[id]` | フロントB + AI判定 | スコア・採点理由・保存 |
 
 > `[id]` は Firestore の `drawingId`（ゲーム開始時に生成）。  
 > URLルーティングには **React Router** を使用する（`react-router-dom`）。Vite + React 構成のため `BrowserRouter` をルートに配置し、各ページを `<Route>` で対応させること。  
 > 設定画面は独立したページとして設けず、ホーム画面のダイアログとして実装する。
+
+`/map` ではカウントダウンと Firestore の作品作成を行い、両方が完了してから `/map/[id]` に移動します。
+完了ボタンまたは時間切れで軌跡を Firestore に保存し、`/result/[id]` で読み込んで採点します。
+Firebase Anonymous Auth と Firestore の設定、および本人の作品を読み書きできるセキュリティルールが必要です。
+Firebase Hosting は `firebase.json` で `dist` を公開し、全パスを `index.html` にリライトします。
+Vite の開発サーバーは SPA のフォールバックに対応しています。
 
 ---
 
