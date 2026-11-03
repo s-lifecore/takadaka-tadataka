@@ -90,7 +90,7 @@ type AIResult = {
 
 Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uid`、`theme`、`imagePublicId`、`result`、`createdAt`です。
 
-APIキーを公開したり、`.env.local`をコミットしたりしないでください。環境変数は@README.mdに記載されたものを使用します。
+APIキーを公開したり、`.env.*.local`をコミットしたりしないでください。環境変数は@README.mdに記載されたものを使用します。
 
 ## 実装時の注意
 

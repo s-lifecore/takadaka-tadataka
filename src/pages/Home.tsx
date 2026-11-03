@@ -111,7 +111,7 @@ function Illustration() {
 
 export function Home() {
   const navigate = useNavigate()
-  const [panel, setPanel] = useState<'guide' | 'works' | 'settings' | null>(null)
+  const [panel, setPanel] = useState<'works' | 'settings' | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -177,7 +177,7 @@ export function Home() {
           <strong>作品帳</strong>
           <small>旅の思い出を見る</small>
         </button>
-        <button onClick={() => setPanel('guide')}>
+        <button onClick={() => navigate('/rules')}>
           <Icon kind="guide" />
           <strong>あそびかた</strong>
           <small>ルールを確認する</small>
@@ -195,21 +195,13 @@ export function Home() {
         onClick={handleDialogClick}
       >
         <h2 id="home-dialog-title">
-          {panel === 'guide' ? 'あそびかた' : panel === 'works' ? '作品帳' : '設定'}
-        </h2>
-        {panel === 'guide' ? (
-          <ol>
-            <li>お題は「りんご」。15分で歩いた軌跡を絵にしよう。</li>
-            <li>画面を見るときは、安全な場所で立ち止まろう。</li>
-            <li>描き終わったら、AIが採点します。</li>
-          </ol>
-        ) : (
+          {panel === 'works' ? '作品帳' : '設定'}
+        </h2> (
           <p>
             {panel === 'works'
               ? '保存した作品を一覧で見る画面は準備中です。'
               : '位置情報の利用許可は、ブラウザの設定から変更できます。'}
           </p>
-        )}
         <button autoFocus onClick={() => setPanel(null)}>
           閉じる
         </button>

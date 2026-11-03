@@ -93,7 +93,7 @@ Vite の開発サーバーは SPA のフォールバックに対応していま�
 | 一時保存 | IndexedDB (Dexie.js) | GPS途切れ・通信不良対策 |
 | PWA | vite-plugin-pwa | 設定だけでPWA化 |
 | 認証 | Firebase Anonymous Auth | サーバー不要 |
-| DB | Firebase Firestore | 結果を保存
+| DB | Firebase Firestore | 結果を保存 |
 | ストレージ | Cloudinary | 画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
 | AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
@@ -187,9 +187,9 @@ npm run dev
 
 ### Firebase Hostingへのデプロイ
 
-GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってそのままデプロイする。
+GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってデプロイする。`prev` と `prod` は別々のFirebaseプロジェクトを使用し、デプロイする。
 
-GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
+GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。`vars.FIREBASE_PROJECT_ID` を使わない場合は、既存の `secrets.VITE_FIREBASE_PROJECT_ID` がフォールバックとして使われる。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
 
 ```text
 VITE_FIREBASE_API_KEY
