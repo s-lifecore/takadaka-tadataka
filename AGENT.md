@@ -11,6 +11,8 @@
                               └→ 時間切れまたは完了
 ```
 
+各画面に対応するURLは `README.md` の「ページ一覧とURL」セクションを参照してください。
+
 ## 技術スタックとコマンド
 
 - React 19、Vite、TypeScript
@@ -50,6 +52,17 @@ lintまたはbuildでエラーが出た場合は、コミットせずにエラ�
 - `src/pages/`: Home、Game、Resultの各画面
 
 ビジネスロジックは適切なフックまたはライブラリモジュールに置き、ページ間で重複させないでください。既存のコードスタイルに合わせ、明示的な要件がない限り現在の画面遷移を維持してください。
+
+## URLルーティング
+
+本プロジェクトは Vite + React 構成のため、**React Router (`react-router-dom`) を必ず使用してURL ルーティングを実装してください**。`useState` によるページ切り替えは使用しないこと。
+
+- `main.tsx` で `<BrowserRouter>` をルートに配置する
+- `App.tsx` で `<Routes>` / `<Route>` を使い、各ページコンポーネントをURLに対応させる
+- ページ間の遷移には `useNavigate` または `<Link>` を使用する
+- URLの設計は `README.md` の「ページ一覧とURL」に従う（`/`・`/map/:id`・`/result/:id`）
+- `[id]` パラメータは `useParams` で取得する
+- Vite の開発サーバーおよび Firebase Hosting では `historyApiFallback` / `rewrites` の設定が必要なため、導入時に合わせて対応すること
 
 ## データ契約
 
