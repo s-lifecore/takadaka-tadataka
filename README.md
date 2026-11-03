@@ -223,6 +223,27 @@ CONFIRM_PROD_DEPLOY=1 npm run deploy:hosting -- prod
 
 このスクリプトは、対象環境のビルド後に `firebase deploy --only hosting --project ...` を実行する。`FIREBASE_PROJECT_ID` または `VITE_FIREBASE_PROJECT_ID` を環境別ファイルに設定する。
 
+### スマートフォンで歩きスマホ検知を確認
+
+傾きセンサーとGPSの実機確認にはHTTPSを使用します。ngrokを設定済みのPCで、次のコマンドをそれぞれ別のターミナルで実行してください。
+
+```bash
+npm run dev -- --port 5173 --strictPort
+```
+
+```bash
+ngrok http 5173
+```
+
+ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。現在の確認用ホスト `chef-unicycle-nanometer.ngrok-free.dev` は `vite.config.ts` の `server.allowedHosts` に登録済みです。URLが変わった場合は、この配列を新しいホスト名に更新してください。
+
+1. ngrokの確認画面が出た場合は「Visit Site」で進みます。
+2. ゲームを開始し、位置情報を許可します。「傾きセンサーを有効にする」が表示された場合は、ボタンを押して許可します。
+3. 安全な場所で立ち止まって端末を水平に近づけ、警告が表示されることを確認します。
+4. 警告中は「軌跡」の点数が増えず、端末を30度以上傾けると警告が消えることを確認します。記録の再開は、画面を見ずに数メートル移動してから立ち止まって確認してください。GPS精度が30mを超える場合や移動距離が3m未満の場合も点は追加されません。
+
+確認中は開発サーバーとngrokの両方を起動したままにしてください。終了時はそれぞれのターミナルで `Ctrl+C` を押します。コードを変更すると開発サーバー経由で反映されます。
+
 ---
 
 ## 注意事項
