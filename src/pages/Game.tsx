@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { MapView } from '../components/MapView'
 import { Timer } from '../components/Timer'
 import { useGeolocation } from '../hooks/useGeolocation'
@@ -21,14 +21,14 @@ export function Game({ onFinish }: Props) {
     return () => stopGPS()
   }, [startGPS, startTimer, stopGPS])
 
-  useEffect(() => {
-    if (expired) handleFinish()
-  }, [expired])
-
-  function handleFinish() {
+  const handleFinish = useCallback(() => {
     stopGPS()
     onFinish(trail)
-  }
+  }, [onFinish, stopGPS, trail])
+
+  useEffect(() => {
+    if (expired) handleFinish()
+  }, [expired, handleFinish])
 
   return (
     <div className="flex flex-col h-screen">
@@ -43,9 +43,7 @@ export function Game({ onFinish }: Props) {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-100 text-red-700 text-sm px-4 py-2">{error}</div>
-      )}
+      {error && <div className="bg-red-100 text-red-700 text-sm px-4 py-2">{error}</div>}
 
       <div className="flex-1 relative">
         <MapView trail={trail} />

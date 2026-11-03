@@ -24,8 +24,7 @@ export function TrailCanvas({ trail, size = 512, onReady }: Props) {
       maxLng = Math.max(...lngs)
     const pad = 40
 
-    const toX = (lng: number) =>
-      pad + ((lng - minLng) / (maxLng - minLng || 1)) * (size - pad * 2)
+    const toX = (lng: number) => pad + ((lng - minLng) / (maxLng - minLng || 1)) * (size - pad * 2)
     const toY = (lat: number) =>
       size - pad - ((lat - minLat) / (maxLat - minLat || 1)) * (size - pad * 2)
 
