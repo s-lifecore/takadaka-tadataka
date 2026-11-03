@@ -56,7 +56,7 @@ npm run build
 
 ## URLルーティング
 
-本プロジェクトは Vite + React 構成のため、**React Router (`react-router-dom`) を必ず使用してURL ルーティングを実装してください**。`useState` によるページ切り替えは使用しないこと。
+本プロジェクトは Vite + React 構成のため、**React Router (`react-router-dom`) を必ず使用してURL ルーティングを実装してください**。`useState` によるページ切り替えは使用しないこと。ただし、モーダルやポップアップなど、ページ遷移を伴わないUIの切り替えは `useState` を使用して構いません。
 
 `react-router-dom` は依存関係に追加済みです。`node_modules` がない場合は先に `npm install` を実行してください。
 
