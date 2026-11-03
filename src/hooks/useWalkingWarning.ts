@@ -16,15 +16,17 @@ export function useWalkingWarning(onWarningChange: (warning: boolean) => void) {
   const callbackRef = useRef(onWarningChange)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => { callbackRef.current = onWarningChange }, [onWarningChange])
+  useEffect(() => {
+    callbackRef.current = onWarningChange
+  }, [onWarningChange])
 
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
     const { beta, gamma } = event
     if (beta === null || gamma === null || !Number.isFinite(beta) || !Number.isFinite(gamma)) return
     if (timeoutRef.current !== null) clearTimeout(timeoutRef.current)
     setStatus('active')
-    const upward = Math.cos(beta * Math.PI / 180) * Math.cos(gamma * Math.PI / 180)
-    const angle = Math.acos(Math.max(-1, Math.min(1, upward))) * 180 / Math.PI
+    const upward = Math.cos((beta * Math.PI) / 180) * Math.cos((gamma * Math.PI) / 180)
+    const angle = (Math.acos(Math.max(-1, Math.min(1, upward))) * 180) / Math.PI
     const next = angle < (warningRef.current ? EXIT_ANGLE : ENTER_ANGLE)
     if (next !== warningRef.current) {
       warningRef.current = next
@@ -49,7 +51,7 @@ export function useWalkingWarning(onWarningChange: (warning: boolean) => void) {
     }
     try {
       const api = DeviceOrientationEvent as OrientationAPI
-      if (api.requestPermission && await api.requestPermission() !== 'granted') {
+      if (api.requestPermission && (await api.requestPermission()) !== 'granted') {
         setStatus('denied')
         return
       }

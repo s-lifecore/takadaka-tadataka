@@ -50,7 +50,6 @@ export function useTimer(initialSeconds: number) {
       document.removeEventListener('visibilitychange', updateRemaining)
       window.removeEventListener('pageshow', updateRemaining)
     }
-
   }, [running])
 
   const expired = remaining === 0
