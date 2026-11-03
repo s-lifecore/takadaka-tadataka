@@ -58,11 +58,7 @@ npm run build
 
 本プロジェクトは Vite + React 構成のため、**React Router (`react-router-dom`) を必ず使用してURL ルーティングを実装してください**。`useState` によるページ切り替えは使用しないこと。
 
-`react-router-dom` はまだインストールされていないため、導入時に次のコマンドを実行してください。
-
-```bash
-npm install react-router-dom
-```
+`react-router-dom` は依存関係に追加済みです。`node_modules` がない場合は先に `npm install` を実行してください。
 
 - `main.tsx` で `<BrowserRouter>` をルートに配置する
 - `App.tsx` で `<Routes>` / `<Route>` を使い、各ページコンポーネントをURLに対応させる
