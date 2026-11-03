@@ -1,61 +1,108 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
 type Props = {
   trail: TrailPoint[]
-  onRetry: () => void
+  onHome: () => void
 }
 
-export function Result({ trail, onRetry }: Props) {
+export function Result({ trail, onHome }: Props) {
   const [result, setResult] = useState<AIResult | null>(null)
-  const [judging, setJudging] = useState(false)
+  const [judging, setJudging] = useState(trail.length >= 2)
   const [error, setError] = useState<string | null>(null)
+  const [image, setImage] = useState<string | null>(null)
+  const requested = useRef(false)
 
   const handleCanvasReady = useCallback(async (base64: string) => {
+    if (requested.current) return
+    requested.current = true
+    setImage(base64)
+    setError(null)
     setJudging(true)
     try {
       const res = await judgeDrawing(base64, 'りんご')
       setResult(res)
-    } catch (e) {
-      setError(String(e))
+    } catch {
+      setError('判定できませんでした。通信環境を確認して、もう一度お試しください。')
     } finally {
       setJudging(false)
     }
   }, [])
 
+  function saveArtwork() {
+    if (!image) return
+    const link = document.createElement('a')
+    link.href = `data:image/png;base64,${image}`
+    link.download = `takadaka-tadataka-${new Date().toISOString().slice(0, 10)}.png`
+    link.click()
+  }
+
   return (
-    <div className="flex flex-col items-center min-h-screen bg-white p-6 gap-6">
-      <h2 className="text-2xl font-bold">結果</h2>
-
-      <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
-        <TrailCanvas trail={trail} onReady={handleCanvasReady} />
-      </div>
-
-      {judging && <p className="text-gray-500">AI が判定中...</p>}
-
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-
-      {result && (
-        <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
-          <div className="text-center">
-            <span className="text-6xl font-bold">{result.score}</span>
-            <span className="text-2xl text-gray-400">/100</span>
-          </div>
-          <p className="text-center text-gray-700">
-            AIの答え：<strong>{result.guess}</strong>
-          </p>
-          <p className="text-sm text-gray-500">{result.reason}</p>
+    <main className="result-page">
+      <div className="result-content">
+        <header className="result-header">おさんぽの結果</header>
+        <div className="result-heading">
+          <h1>作品が完成したよ！</h1>
+          <p>AIは何の絵だと思ったかな？</p>
         </div>
-      )}
 
-      <button
-        onClick={onRetry}
-        className="w-full max-w-sm py-4 border-2 border-black text-black text-lg font-semibold rounded-2xl"
-      >
-        もう一度
-      </button>
-    </div>
+        <section className="result-artwork" aria-label="あなたの作品">
+          <h2>あなたの作品</h2>
+          <div className="result-canvas">
+            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+            {trail.length < 2 && <p>記録された軌跡がありません</p>}
+          </div>
+          <p className="result-artwork-caption">地図を含まないGPSの線画</p>
+        </section>
+
+        <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
+          <h2>AIの採点結果</h2>
+          {result ? (
+            <>
+              <p className="result-points">
+                {result.score}
+                <span>点</span>
+              </p>
+              <p className="result-guess">AIの予想：{result.guess || '判定なし'}</p>
+              <p className="result-reason">{result.reason}</p>
+            </>
+          ) : (
+            <p className="result-message" role="status">
+              {judging
+                ? 'AIが作品を判定しています…'
+                : error
+                  ? '判定結果を取得できませんでした'
+                  : '採点できる軌跡がありません'}
+            </p>
+          )}
+          {error && (
+            <div className="result-error" role="alert">
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!image) return
+                  requested.current = false
+                  void handleCanvasReady(image)
+                }}
+              >
+                もう一度判定する
+              </button>
+            </div>
+          )}
+        </section>
+
+        <footer className="result-actions">
+          <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
+            作品を保存する
+          </button>
+          <button type="button" className="result-home" onClick={onHome}>
+            ホームに戻る
+          </button>
+        </footer>
+      </div>
+    </main>
   )
 }

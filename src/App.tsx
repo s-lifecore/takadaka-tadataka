@@ -22,5 +22,5 @@ export function App() {
 
   if (page === 'home') return <Home onStart={handleStart} />
   if (page === 'game') return <Game onFinish={handleFinish} />
-  return <Result trail={trail} onRetry={handleStart} />
+  return <Result trail={trail} onHome={() => setPage('home')} />
 }
