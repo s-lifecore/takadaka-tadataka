@@ -187,9 +187,9 @@ npm run dev
 
 ### Firebase Hostingへのデプロイ
 
-GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってそのままデプロイする。
+GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってデプロイする。`prev` と `prod` は別々のFirebaseプロジェクトを使用し、デプロイする。
 
-GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
+GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。`vars.FIREBASE_PROJECT_ID` を使わない場合は、既存の `secrets.VITE_FIREBASE_PROJECT_ID` がフォールバックとして使われる。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
 
 ```text
 VITE_FIREBASE_API_KEY
