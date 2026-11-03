@@ -35,11 +35,12 @@ npm run dev
 **コミット前に必ず**次のチェックを実行し、すべてエラーなしで通ることを確認してください。
 
 ```bash
+npm run format
 npm run lint
 npm run build
 ```
 
-lintまたはbuildでエラーが出た場合は、コミットせずにエラーを修正してから再度チェックしてください。
+いずれかでエラーが出た場合は、コミットせずに修正してから再度チェックしてください。
 
 スマートフォンを同じLANから確認する場合は、`npm run dev -- --host`を使用します。ブラウザの権限、HTTPS要件、GPSの精度、実際のFirebase・Geminiとの通信は別途確認が必要です。ビルド成功だけでは、これらの動作を保証できません。
 
@@ -56,6 +57,12 @@ lintまたはbuildでエラーが出た場合は、コミットせずにエラ�
 ## URLルーティング
 
 本プロジェクトは Vite + React 構成のため、**React Router (`react-router-dom`) を必ず使用してURL ルーティングを実装してください**。`useState` によるページ切り替えは使用しないこと。
+
+`react-router-dom` はまだインストールされていないため、導入時に次のコマンドを実行してください。
+
+```bash
+npm install react-router-dom
+```
 
 - `main.tsx` で `<BrowserRouter>` をルートに配置する
 - `App.tsx` で `<Routes>` / `<Route>` を使い、各ページコンポーネントをURLに対応させる
