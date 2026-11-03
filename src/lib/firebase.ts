@@ -3,7 +3,7 @@ import { getAuth, signInAnonymously } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { collection, doc, getFirestore, setDoc } from 'firebase/firestore'
 import { uploadDrawingImage } from './cloudinary'
-import type { AIResult, TrailPoint } from '../types'
+import type { AIResult } from '../types'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -46,7 +46,6 @@ export async function signInAnon() {
 export async function saveDrawing(
   uid: string,
   theme: string,
-  trail: TrailPoint[],
   imageBase64: string,
   result: AIResult,
 ): Promise<{ imagePublicId: string }> {
@@ -56,7 +55,6 @@ export async function saveDrawing(
   await setDoc(drawingRef, {
     uid,
     theme,
-    trail,
     imagePublicId: image.publicId,
     result,
     createdAt: Date.now(),

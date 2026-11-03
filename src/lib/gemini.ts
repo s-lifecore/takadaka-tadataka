@@ -1,7 +1,7 @@
 import type { AIResult } from '../types'
 
 // TODO(AI担当): Firebase AI Logic 経由に変更してAPIキーをフロントから除去する
-const GEMINI_MODEL = "gemini-3.6-flash"
+const GEMINI_MODEL = 'gemini-3.6-flash'
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
 const RUBRIC = `

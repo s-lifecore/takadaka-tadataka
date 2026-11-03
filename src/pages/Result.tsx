@@ -22,33 +22,30 @@ export function Result({ trail, onRetry }: Props) {
   const [error, setError] = useState<string | null>(null)
   const processedImage = useRef<string | null>(null)
 
-  const handleCanvasReady = useCallback(
-    async (base64: string) => {
-      if (processedImage.current === base64) return
-      processedImage.current = base64
+  const handleCanvasReady = useCallback(async (base64: string) => {
+    if (processedImage.current === base64) return
+    processedImage.current = base64
 
-      setJudging(true)
-      setSaved(false)
-      setError(null)
-      const theme = 'りんご'
-      try {
-        const res = await judgeDrawing(base64, theme)
-        setResult(res)
-        setJudging(false)
-        setSaving(true)
-        const user = await signInAnon()
-        const savedDrawing = await saveDrawing(user.uid, theme, trail, base64, res)
-        setImagePublicId(savedDrawing.imagePublicId)
-        setSaved(true)
-      } catch (e: unknown) {
-        setError(String(e))
-      } finally {
-        setJudging(false)
-        setSaving(false)
-      }
-    },
-    [trail],
-  )
+    setJudging(true)
+    setSaved(false)
+    setError(null)
+    const theme = 'りんご'
+    try {
+      const res = await judgeDrawing(base64, theme)
+      setResult(res)
+      setJudging(false)
+      setSaving(true)
+      const user = await signInAnon()
+      const savedDrawing = await saveDrawing(user.uid, theme, base64, res)
+      setImagePublicId(savedDrawing.imagePublicId)
+      setSaved(true)
+    } catch (e: unknown) {
+      setError(String(e))
+    } finally {
+      setJudging(false)
+      setSaving(false)
+    }
+  }, [])
 
   const cloudinary = new Cloudinary({
     cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
