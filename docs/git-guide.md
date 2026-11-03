@@ -29,7 +29,7 @@ main        ← 動くものだけ置く。直接 push 禁止
 git clone git@github.com:s-lifecore/takadaka-tadataka.git
 cd takadaka-tadataka
 npm install
-cp .env.example .env.local   # Firebaseキーを記入（バックエンド担当から受け取る）
+cp .env.example .env.prev.local   # Firebaseキーを記入（バックエンド担当から受け取る）
 ```
 
 main ブランチを手元に持ってくる：
@@ -118,7 +118,7 @@ git commit
 
 - `main` に直接 `git push` ❌
 - `git push --force` ❌（チームメンバーの履歴が消える）
-- `node_modules` や `.env.local` をコミット ❌（`.gitignore` で除外済み）
+- `node_modules` や `.env.prev.local` をコミット ❌（`.gitignore` で除外済み）
 
 ---
 
