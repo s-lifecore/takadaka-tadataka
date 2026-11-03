@@ -5,7 +5,10 @@
 1. Issueを作成または既存のIssueを確認
 2. `main`ブランチから作業ブランチを作成
 3. 変更を実装
-4. Pull Requestを作成
+4. `npm run format`及び`npm run lint`を実行する
+5. `npm run typecheck`を実行し、型チェックのエラーがないか確認
+6. コミットしてリモートに変更内容を上げる
+7. Pull Requestを作成
 
 ## ブランチ命名規則
 

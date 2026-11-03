@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 import type { TrailPoint } from '../types'
 
-const MIN_ACCURACY = 30  // 精度が30m以下の点だけ使う（ノイズ除去）
-const MIN_DISTANCE = 3   // 前の点から3m以上動いたら追加
+const MIN_ACCURACY = 30 // 精度が30m以下の点だけ使う（ノイズ除去）
+const MIN_DISTANCE = 3 // 前の点から3m以上動いたら追加
 
 function distanceMeters(a: TrailPoint, b: TrailPoint): number {
   const R = 6371000
@@ -10,7 +10,9 @@ function distanceMeters(a: TrailPoint, b: TrailPoint): number {
   const dLng = ((b.lng - a.lng) * Math.PI) / 180
   const sinDLat = Math.sin(dLat / 2)
   const sinDLng = Math.sin(dLng / 2)
-  const c = sinDLat * sinDLat + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * sinDLng * sinDLng
+  const c =
+    sinDLat * sinDLat +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * sinDLng * sinDLng
   return R * 2 * Math.atan2(Math.sqrt(c), Math.sqrt(1 - c))
 }
 
@@ -28,7 +30,11 @@ export function useGeolocation() {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         if (pos.coords.accuracy > MIN_ACCURACY) return
-        const point: TrailPoint = { lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() }
+        const point: TrailPoint = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          t: Date.now(),
+        }
         if (lastRef.current && distanceMeters(lastRef.current, point) < MIN_DISTANCE) return
         lastRef.current = point
         setTrail((prev) => [...prev, point])
