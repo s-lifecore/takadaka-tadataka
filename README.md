@@ -41,12 +41,19 @@
 | ページ | URL | 担当 | 説明 |
 |--------|-----|------|------|
 | ホーム | `/` | フロントB | ゲーム開始・作品帳・あそびかた（設定はダイアログ） |
+| カウントダウン | `/map` | フロントA | 3秒カウントダウン・Firestore drawingId 生成 |
 | プレイ中（地図） | `/map/[id]` | フロントA | 地図・軌跡描画・タイマー |
 | 結果 | `/result/[id]` | フロントB + AI判定 | スコア・採点理由・保存 |
 
 > `[id]` は Firestore の `drawingId`（ゲーム開始時に生成）。  
 > URLルーティングには **React Router** を使用する（`react-router-dom`）。Vite + React 構成のため `BrowserRouter` をルートに配置し、各ページを `<Route>` で対応させること。  
 > 設定画面は独立したページとして設けず、ホーム画面のダイアログとして実装する。
+
+`/map` ではカウントダウンと Firestore の作品作成を行い、両方が完了してから `/map/[id]` に移動します。
+完了ボタンまたは時間切れで軌跡を Firestore に保存し、`/result/[id]` で読み込んで採点します。
+Firebase Anonymous Auth と Firestore の設定、および本人の作品を読み書きできるセキュリティルールが必要です。
+Firebase Hosting は `firebase.json` で `dist` を公開し、全パスを `index.html` にリライトします。
+Vite の開発サーバーは SPA のフォールバックに対応しています。
 
 ---
 
@@ -86,8 +93,8 @@
 | 一時保存 | IndexedDB (Dexie.js) | GPS途切れ・通信不良対策 |
 | PWA | vite-plugin-pwa | 設定だけでPWA化 |
 | 認証 | Firebase Anonymous Auth | サーバー不要 |
-| DB | Firebase Firestore | リアルタイム・サーバー不要 |
-| ストレージ | Firebase Storage | 画像保存 |
+| DB | Firebase Firestore | 結果を保存
+| ストレージ | Cloudinary | 画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
 | AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
 
@@ -115,16 +122,15 @@ type AIResult = {
 };
 ```
 
-### Firestore スキーマ（予定）
+### Firestore スキーマ
 
 ```plaintext
 drawings/{drawingId}
-  uuid:     string       // Anonymous Auth UUID
+  uid:     string       　// Anonymous Auth UID
   theme:    string       // お題
-  trail:    TrailPoint[] // 軌跡
-  imageUrl: string       // Storage URL
+  imagePublicId: string  // Cloudinary public ID
   result:   AIResult
-  createdAt: Timestamp
+  createdAt: string        // ISO 8601形式のAsia/Tokyo時刻（+09:00）
 ```
 
 ---
@@ -153,10 +159,10 @@ npm install
 
 ### 環境変数
 
-`.env.local` を作成（`.env.example` をコピー）：
+`.env.prev.local` を作成（`.env.example` をコピー）：
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env.prev.local
 ```
 
 ```env
@@ -166,6 +172,8 @@ VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
+VITE_CLOUDINARY_CLOUD_NAME=...
+VITE_CLOUDINARY_UPLOAD_PRESET=...
 VITE_GEMINI_API_KEY=...
 ```
 
@@ -176,6 +184,65 @@ npm run dev
 ```
 
 > スマホ実機で確認する場合：`npm run dev -- --host` でLANのIPにアクセス（HTTPSが必要なAPIは `localhost` のみ動作）
+
+### Firebase Hostingへのデプロイ
+
+GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってそのままデプロイする。
+
+GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+VITE_CLOUDINARY_CLOUD_NAME
+VITE_CLOUDINARY_UPLOAD_PRESET
+VITE_GEMINI_API_KEY
+```
+
+ローカルからはFirebase CLIでログインしたあと、環境別ファイルを作成してデプロイする。`.env.*.local` はGitに含まれない。
+
+```bash
+npm install
+npx --yes firebase-tools@15.34.2 login
+cp .env.example .env.prev.local
+# .env.prev.local に prev 用のFirebase / Cloudinary / Gemini設定を記入
+npm run deploy:hosting -- prev
+```
+
+`prod` は明示的な確認値が必要になる。
+
+```bash
+cp .env.example .env.prod.local
+# .env.prod.local に prod 用の設定を記入
+CONFIRM_PROD_DEPLOY=1 npm run deploy:hosting -- prod
+```
+
+このスクリプトは、対象環境のビルド後に `firebase deploy --only hosting --project ...` を実行する。`FIREBASE_PROJECT_ID` または `VITE_FIREBASE_PROJECT_ID` を環境別ファイルに設定する。
+
+### スマートフォンで歩きスマホ検知を確認
+
+傾きセンサーとGPSの実機確認にはHTTPSを使用します。ngrokを設定済みのPCで、次のコマンドをそれぞれ別のターミナルで実行してください。
+
+```bash
+npm run dev -- --port 5173 --strictPort
+```
+
+```bash
+ngrok http 5173
+```
+
+ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。現在の確認用ホスト `chef-unicycle-nanometer.ngrok-free.dev` は `vite.config.ts` の `server.allowedHosts` に登録済みです。URLが変わった場合は、この配列を新しいホスト名に更新してください。
+
+1. ngrokの確認画面が出た場合は「Visit Site」で進みます。
+2. ゲームを開始し、位置情報を許可します。「傾きセンサーを有効にする」が表示された場合は、ボタンを押して許可します。
+3. 安全な場所で立ち止まって端末を水平に近づけ、警告が表示されることを確認します。
+4. 警告中は「軌跡」の点数が増えず、端末を30度以上傾けると警告が消えることを確認します。記録の再開は、画面を見ずに数メートル移動してから立ち止まって確認してください。GPS精度が30mを超える場合や移動距離が3m未満の場合も点は追加されません。
+
+確認中は開発サーバーとngrokの両方を起動したままにしてください。終了時はそれぞれのターミナルで `Ctrl+C` を押します。コードを変更すると開発サーバー経由で反映されます。
 
 ---
 
