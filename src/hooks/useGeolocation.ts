@@ -20,7 +20,7 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
   const [trail, setTrail] = useState<TrailPoint[]>(initialTrail)
   const [error, setError] = useState<string | null>(null)
   const watchIdRef = useRef<number | null>(null)
-  const lastRef = useRef<TrailPoint | null>(initialTrail.at(-1) ?? null)
+  const lastRef = useRef<TrailPoint | null>(initialTrail[initialTrail.length - 1] ?? null)
 
   const start = useCallback(() => {
     if (!navigator.geolocation) {

@@ -42,9 +42,17 @@ function StartCountdown() {
   }, [navigate, countdownFinished])
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-6" aria-live="polite">
-      <h2 className="text-2xl font-bold">ゲーム開始</h2>
-      {error ? <p role="alert">{error}</p> : <p className="text-6xl">{remaining || '準備中…'}</p>}
+    <div className="flex flex-col items-center justify-center h-screen gap-6 bg-white">
+      <p className="text-lg font-bold">🍎 りんご</p>
+      <div role="status" aria-live="assertive" aria-atomic="true" className="text-center">
+        <p className="text-gray-600 mb-4">ゲーム開始まで</p>
+        {error ? (
+          <p role="alert">{error}</p>
+        ) : (
+          <p className="text-8xl font-mono font-bold tabular-nums">{remaining || '準備中…'}</p>
+        )}
+      </div>
+      <p className="text-sm text-gray-500">画面を見ながら歩かないでください</p>
       <Link to="/" className="underline">
         ホームへ戻る
       </Link>
