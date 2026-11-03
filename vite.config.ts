@@ -3,6 +3,12 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  resolve: {
+    extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
+  },
+  server: {
+    allowedHosts: ['chef-unicycle-nanometer.ngrok-free.dev'],
+  },
   plugins: [
     react(),
     VitePWA({

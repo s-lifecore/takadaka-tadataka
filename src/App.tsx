@@ -1,26 +1,20 @@
-import { useState } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Game } from './pages/Game'
 import { Home } from './pages/Home'
 import { Result } from './pages/Result'
-import type { TrailPoint } from './types'
-
-type Page = 'home' | 'game' | 'result'
+import { Rules } from './pages/Rules'
 
 export function App() {
-  const [page, setPage] = useState<Page>('home')
-  const [trail, setTrail] = useState<TrailPoint[]>([])
+  const { pathname } = useLocation()
 
-  function handleStart() {
-    setTrail([])
-    setPage('game')
-  }
-
-  function handleFinish(t: TrailPoint[]) {
-    setTrail(t)
-    setPage('result')
-  }
-
-  if (page === 'home') return <Home onStart={handleStart} />
-  if (page === 'game') return <Game onFinish={handleFinish} />
-  return <Result trail={trail} onHome={() => setPage('home')} />
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/rules" element={<Rules />} />
+      <Route path="/map" element={<Game key={pathname} />} />
+      <Route path="/map/:id" element={<Game key={pathname} />} />
+      <Route path="/result/:id" element={<Result key={pathname} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
