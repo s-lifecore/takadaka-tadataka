@@ -194,14 +194,12 @@ export function Home() {
         onClose={() => setPanel(null)}
         onClick={handleDialogClick}
       >
-        <h2 id="home-dialog-title">
-          {panel === 'works' ? '作品帳' : '設定'}
-        </h2> (
-          <p>
-            {panel === 'works'
-              ? '保存した作品を一覧で見る画面は準備中です。'
-              : '位置情報の利用許可は、ブラウザの設定から変更できます。'}
-          </p>
+        <h2 id="home-dialog-title">{panel === 'works' ? '作品帳' : '設定'}</h2> (
+        <p>
+          {panel === 'works'
+            ? '保存した作品を一覧で見る画面は準備中です。'
+            : '位置情報の利用許可は、ブラウザの設定から変更できます。'}
+        </p>
         <button autoFocus onClick={() => setPanel(null)}>
           閉じる
         </button>

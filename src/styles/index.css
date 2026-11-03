@@ -317,6 +317,7 @@ body,
   .home-footer {
     margin-top: clamp(24px, 4vh, 56px);
   }
+}
 
 .rules-page {
   min-height: 100svh;
