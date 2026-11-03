@@ -4,8 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   resolve: {
-    // Prefer source files over JavaScript emitted by earlier TypeScript builds.
     extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
+  },
+  server: {
+    allowedHosts: ['chef-unicycle-nanometer.ngrok-free.dev'],
   },
   plugins: [
     react(),
