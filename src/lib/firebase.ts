@@ -26,7 +26,7 @@ const missingConfig = Object.entries(firebaseConfig)
 if (missingConfig.length > 0) {
   throw new Error(
     `Firebase configuration is missing: ${missingConfig.join(', ')}. ` +
-      'Copy .env.example to .env.local and fill in the Firebase web app settings.',
+      'Copy .env.example to .env.prev.local and fill in the Firebase web app settings, and start Vite with --mode prev.',
   )
 }
 

@@ -15,7 +15,7 @@ function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
 
 export function MapView({ trail }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = trail[trail.length - 1] ?? { lat: 36.5748, lng: 136.5975 } // 金沢大学
+  const center = trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
 
   return (
     <MapContainer
