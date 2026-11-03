@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-**新しいファイルを作成するとき**は、まず `README.md` の「ページ一覧とURL」「ディレクトリ構成」セクションを読み、追加するファイルがプロジェクトの構造・命名規則・画面設計と整合しているかを確認してから着手してください。整合していない場合は、作業を開始する前にユーザーに確認してください。
+**新しいファイルを作成するとき**は、まず @README.md の「ページ一覧とURL」「ディレクトリ構成」セクションを読み、追加するファイルがプロジェクトの構造・命名規則・画面設計と整合しているかを確認してから着手してください。整合していない場合は、作業を開始する前にユーザーに確認してください。
 
 **コミット前に必ず**次のチェックを実行し、すべてエラーなしで通ることを確認してください。
 
@@ -63,7 +63,7 @@ npm run build
 - `main.tsx` で `<BrowserRouter>` をルートに配置する
 - `App.tsx` で `<Routes>` / `<Route>` を使い、各ページコンポーネントをURLに対応させる
 - ページ間の遷移には `useNavigate` または `<Link>` を使用する
-- URLの設計は `README.md` の「ページ一覧とURL」に従う（`/`・`/map/:id`・`/result/:id`）
+- URLの設計は @README.md の「ページ一覧とURL」に従う（`/`・`/map/:id`・`/result/:id`）
 - `[id]` パラメータは `useParams` で取得する
 - Vite の開発サーバーおよび Firebase Hosting では `historyApiFallback` / `rewrites` の設定が必要なため、導入時に合わせて対応すること
 
@@ -90,7 +90,7 @@ type AIResult = {
 
 Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uuid`、`theme`、`trail`、`imageUrl`、`result`、`createdAt`です。
 
-APIキーを公開したり、`.env.local`をコミットしたりしないでください。環境変数は`README.md`に記載されたものを使用します。
+APIキーを公開したり、`.env.local`をコミットしたりしないでください。環境変数は@README.mdに記載されたものを使用します。
 
 ## 実装時の注意
 
