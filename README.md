@@ -75,7 +75,7 @@
 | PWA | vite-plugin-pwa | 設定だけでPWA化 |
 | 認証 | Firebase Anonymous Auth | サーバー不要 |
 | DB | Firebase Firestore | リアルタイム・サーバー不要 |
-| ストレージ | Firebase Storage | 画像保存 |
+| ストレージ | Cloudinary | 画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
 | AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
 
@@ -103,14 +103,13 @@ type AIResult = {
 };
 ```
 
-### Firestore スキーマ（予定）
+### Firestore スキーマ
 
 ```plaintext
 drawings/{drawingId}
-  uuid:     string       // Anonymous Auth UUID
+  uid:     string       　// Anonymous Auth UID
   theme:    string       // お題
-  trail:    TrailPoint[] // 軌跡
-  imageUrl: string       // Storage URL
+  imagePublicId: string  // Cloudinary public ID
   result:   AIResult
   createdAt: Timestamp
 ```
@@ -154,6 +153,8 @@ VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
+VITE_CLOUDINARY_CLOUD_NAME=...
+VITE_CLOUDINARY_UPLOAD_PRESET=...
 VITE_GEMINI_API_KEY=...
 ```
 
