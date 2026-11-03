@@ -140,10 +140,10 @@ npm install
 
 ### 環境変数
 
-`.env.local` を作成（`.env.example` をコピー）：
+`.env.prev.local` を作成（`.env.example` をコピー）：
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env.prev.local
 ```
 
 ```env
@@ -165,6 +165,44 @@ npm run dev
 ```
 
 > スマホ実機で確認する場合：`npm run dev -- --host` でLANのIPにアクセス（HTTPSが必要なAPIは `localhost` のみ動作）
+
+### Firebase Hostingへのデプロイ
+
+GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってそのままデプロイする。
+
+GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+VITE_CLOUDINARY_CLOUD_NAME
+VITE_CLOUDINARY_UPLOAD_PRESET
+VITE_GEMINI_API_KEY
+```
+
+ローカルからはFirebase CLIでログインしたあと、環境別ファイルを作成してデプロイする。`.env.*.local` はGitに含まれない。
+
+```bash
+npm install
+npx --yes firebase-tools@15.34.2 login
+cp .env.example .env.prev.local
+# .env.prev.local に prev 用のFirebase / Cloudinary / Gemini設定を記入
+npm run deploy:hosting -- prev
+```
+
+`prod` は明示的な確認値が必要になる。
+
+```bash
+cp .env.example .env.prod.local
+# .env.prod.local に prod 用の設定を記入
+CONFIRM_PROD_DEPLOY=1 npm run deploy:hosting -- prod
+```
+
+このスクリプトは、対象環境のビルド後に `firebase deploy --only hosting --project ...` を実行する。`FIREBASE_PROJECT_ID` または `VITE_FIREBASE_PROJECT_ID` を環境別ファイルに設定する。
 
 ---
 
