@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function Icon({ kind }: { kind: 'compass' | 'gear' | 'steps' | 'people' | 'book' | 'guide' }) {
@@ -118,6 +119,19 @@ export function Home() {
     else dialogRef.current?.close()
   }, [panel])
 
+  function handleDialogClick(event: MouseEvent<HTMLDialogElement>) {
+    if (event.target !== event.currentTarget) return
+
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const outside =
+      event.clientX < bounds.left ||
+      event.clientX > bounds.right ||
+      event.clientY < bounds.top ||
+      event.clientY > bounds.bottom
+
+    if (outside) setPanel(null)
+  }
+
   return (
     <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
       <header className="home-top flex items-center justify-between">
@@ -178,18 +192,7 @@ export function Home() {
         aria-labelledby="home-dialog-title"
         onCancel={() => setPanel(null)}
         onClose={() => setPanel(null)}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) {
-            const bounds = event.currentTarget.getBoundingClientRect()
-            if (
-              event.clientX < bounds.left ||
-              event.clientX > bounds.right ||
-              event.clientY < bounds.top ||
-              event.clientY > bounds.bottom
-            )
-              setPanel(null)
-          }
-        }}
+        onClick={handleDialogClick}
       >
         <h2 id="home-dialog-title">
           {panel === 'guide' ? 'あそびかた' : panel === 'works' ? '作品帳' : '設定'}
