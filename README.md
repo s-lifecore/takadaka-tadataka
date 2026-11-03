@@ -93,7 +93,7 @@ Vite の開発サーバーは SPA のフォールバックに対応していま�
 | 一時保存 | IndexedDB (Dexie.js) | GPS途切れ・通信不良対策 |
 | PWA | vite-plugin-pwa | 設定だけでPWA化 |
 | 認証 | Firebase Anonymous Auth | サーバー不要 |
-| DB | Firebase Firestore | 結果を保存
+| DB | Firebase Firestore | 結果を保存 |
 | ストレージ | Cloudinary | 画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
 | AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
