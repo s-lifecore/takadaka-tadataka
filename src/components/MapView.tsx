@@ -8,14 +8,14 @@ type Props = {
 
 function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
   const map = useMap()
-  const last = trail[trail.length - 1]
+  const last = trail.at(-1)
   if (last) map.panTo([last.lat, last.lng])
   return null
 }
 
 export function MapView({ trail }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = trail[trail.length - 1] ?? { lat: 36.5748, lng: 136.5975 } // 金沢大学
+  const center = trail.at(-1) ?? { lat: 36.5748, lng: 136.5975 } // 金沢大学
 
   return (
     <MapContainer
