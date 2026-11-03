@@ -19,7 +19,7 @@
 - Tailwind CSS
 - 地図と軌跡表示: Leaflet / react-leaflet
 - GPS: ブラウザの Geolocation API
-- 認証・データ保存: Firebase Anonymous Auth、Firestore、Storage
+- 認証・データ保存: Firebase Anonymous Auth、Firestore、Cloudinary
 - AI判定: Firebase AI Logic 経由の Gemini API
 - 一時的なオフライン保存: Dexie.js（導入予定）
 
@@ -88,7 +88,7 @@ type AIResult = {
 };
 ```
 
-Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uuid`、`theme`、`trail`、`imageUrl`、`result`、`createdAt`です。
+Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uid`、`theme`、`imagePublicId`、`result`、`createdAt`です。
 
 APIキーを公開したり、`.env.local`をコミットしたりしないでください。環境変数は@README.mdに記載されたものを使用します。
 
