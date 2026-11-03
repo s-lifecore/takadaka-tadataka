@@ -23,12 +23,15 @@ export function useGeolocation() {
   const lastRef = useRef<TrailPoint | null>(null)
 
   const start = useCallback(() => {
+    if (watchIdRef.current !== null) return
+    setError(null)
     if (!navigator.geolocation) {
       setError('このブラウザは位置情報に対応していません')
       return
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        setError(null)
         if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {
           lat: pos.coords.latitude,
