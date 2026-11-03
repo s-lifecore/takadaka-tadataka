@@ -43,17 +43,8 @@ export function TrailCanvas({ trail, size = 512, onReady }: Props) {
     }
     ctx.stroke()
 
-    onReady?.(
-      canvas.toDataURL('image/png').replace('data:image/png;base64,', ''),
-    )
+    onReady?.(canvas.toDataURL('image/png').replace('data:image/png;base64,', ''))
   }, [trail, size, onReady])
 
-  return (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
-      className="w-full h-full"
-    />
-  )
+  return <canvas ref={canvasRef} width={size} height={size} className="w-full h-full" />
 }

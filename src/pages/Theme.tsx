@@ -34,12 +34,7 @@ export function Theme({ onBack, onStart }: Props) {
           ))}
         </div>
         <p className="theme-notebook-label">たかだか旅のスケッチ帳</p>
-        <svg
-          className="theme-apple"
-          viewBox="0 0 260 180"
-          fill="none"
-          aria-hidden="true"
-        >
+        <svg className="theme-apple" viewBox="0 0 260 180" fill="none" aria-hidden="true">
           <path
             d="M128 52C85 20 40 60 51 113c10 49 36 56 69 47 15-5 27 8 44 2 51-19 62-91 19-111-18-9-36-6-55 1Z"
             fill="#EBA78E"
