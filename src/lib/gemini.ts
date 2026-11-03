@@ -1,6 +1,7 @@
 import type { AIResult } from '../types'
 
 // TODO(AI担当): Firebase AI Logic 経由に変更してAPIキーをフロントから除去する
+const GEMINI_MODEL = 'gemini-3.6-flash'
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
 const RUBRIC = `
@@ -31,12 +32,8 @@ export async function judgeDrawing(
   }
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    },
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
   )
 
   if (!res.ok) throw new Error(`Gemini API error: ${res.status}`)
