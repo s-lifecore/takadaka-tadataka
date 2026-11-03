@@ -61,11 +61,6 @@ function PlayingGame({ onFinish }: Props) {
     return () => stopGPS()
   }, [startGPS, startTimer, stopGPS])
 
-  const handleFinish = useCallback(() => {
-    stopGPS()
-    onFinish(trail)
-  }, [onFinish, stopGPS, trail])
-
   useEffect(() => {
     if (expired) handleFinish()
   }, [expired, handleFinish])
