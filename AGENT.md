@@ -11,6 +11,8 @@
                               └→ 時間切れまたは完了
 ```
 
+各画面に対応するURLは @README.md の「ページ一覧とURL」セクションを参照してください。
+
 ## 技術スタックとコマンド
 
 - React 19、Vite、TypeScript
@@ -28,12 +30,17 @@ npm install
 npm run dev
 ```
 
-変更を提出する前に、変更内容に応じて次のチェックを実行してください。
+**新しいファイルを作成するとき**は、まず @README.md の「ページ一覧とURL」「ディレクトリ構成」セクションを読み、追加するファイルがプロジェクトの構造・命名規則・画面設計と整合しているかを確認してから着手してください。整合していない場合は、作業を開始する前にユーザーに確認してください。
+
+**コミット前に必ず**次のチェックを実行し、すべてエラーなしで通ることを確認してください。
 
 ```bash
+npm run format
 npm run lint
 npm run build
 ```
+
+いずれかでエラーが出た場合は、コミットせずに修正してから再度チェックしてください。
 
 スマートフォンを同じLANから確認する場合は、`npm run dev -- --host`を使用します。ブラウザの権限、HTTPS要件、GPSの精度、実際のFirebase・Geminiとの通信は別途確認が必要です。ビルド成功だけでは、これらの動作を保証できません。
 
@@ -46,6 +53,19 @@ npm run build
 - `src/pages/`: Home、Game、Resultの各画面
 
 ビジネスロジックは適切なフックまたはライブラリモジュールに置き、ページ間で重複させないでください。既存のコードスタイルに合わせ、明示的な要件がない限り現在の画面遷移を維持してください。
+
+## URLルーティング
+
+本プロジェクトは Vite + React 構成のため、**React Router (`react-router-dom`) を必ず使用してURL ルーティングを実装してください**。`useState` によるページ切り替えは使用しないこと。ただし、モーダルやポップアップなど、ページ遷移を伴わないUIの切り替えは `useState` を使用して構いません。
+
+`react-router-dom` は依存関係に追加済みです。`node_modules` がない場合は先に `npm install` を実行してください。
+
+- `main.tsx` で `<BrowserRouter>` をルートに配置する
+- `App.tsx` で `<Routes>` / `<Route>` を使い、各ページコンポーネントをURLに対応させる
+- ページ間の遷移には `useNavigate` または `<Link>` を使用する
+- URLの設計は @README.md の「ページ一覧とURL」に従う（`/`・`/map/:id`・`/result/:id`）
+- `[id]` パラメータは `useParams` で取得する
+- Vite の開発サーバーおよび Firebase Hosting では `historyApiFallback` / `rewrites` の設定が必要なため、導入時に合わせて対応すること
 
 ## データ契約
 
@@ -70,7 +90,7 @@ type AIResult = {
 
 Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uuid`、`theme`、`trail`、`imageUrl`、`result`、`createdAt`です。
 
-APIキーを公開したり、`.env.local`をコミットしたりしないでください。環境変数は`README.md`に記載されたものを使用します。
+APIキーを公開したり、`.env.local`をコミットしたりしないでください。環境変数は@README.mdに記載されたものを使用します。
 
 ## 実装時の注意
 
