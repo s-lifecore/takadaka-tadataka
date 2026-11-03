@@ -1,9 +1,7 @@
-type Props = {
-  onStart: () => void
-  onCollection: () => void
-}
+import { useNavigate } from 'react-router-dom'
 
-export function Home({ onStart, onCollection }: Props) {
+export function Home() {
+  const navigate = useNavigate()
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-8 p-6 bg-white">
       <h1 className="text-3xl font-bold">高々忠敬</h1>
@@ -21,17 +19,23 @@ export function Home({ onStart, onCollection }: Props) {
       </ul>
 
       <button
-        onClick={onStart}
+        onClick={() => navigate('/map')}
         className="w-full max-w-sm py-4 bg-black text-white text-lg font-semibold rounded-2xl"
       >
         スタート
       </button>
       <button
         type="button"
-        onClick={onCollection}
+        onClick={() => navigate('/collection')}
         className="w-full max-w-sm py-4 border border-[#c89f76] bg-[#fffaf0] text-[#604733] text-lg font-semibold rounded-2xl"
       >
         作品帳
+      </button>
+      <button
+        onClick={() => navigate('/rules')}
+        className="w-full max-w-sm py-4 border border-[#c89f76] bg-[#fffaf0] text-[#604733] text-lg font-semibold rounded-2xl"
+      >
+        あそびかた
       </button>
     </div>
   )
