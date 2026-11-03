@@ -111,7 +111,7 @@ drawings/{drawingId}
   theme:    string       // お題
   imagePublicId: string  // Cloudinary public ID
   result:   AIResult
-  createdAt: Timestamp
+  createdAt: string        // ISO 8601形式のAsia/Tokyo時刻（+09:00）
 ```
 
 ---

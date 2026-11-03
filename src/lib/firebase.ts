@@ -2,8 +2,14 @@ import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { collection, doc, getFirestore, setDoc } from 'firebase/firestore'
+import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 import { uploadDrawingImage } from './cloudinary'
 import type { AIResult } from '../types'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -57,7 +63,7 @@ export async function saveDrawing(
     theme,
     imagePublicId: image.publicId,
     result,
-    createdAt: Date.now(),
+    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
   })
 
   return { imagePublicId: image.publicId }

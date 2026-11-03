@@ -15,5 +15,5 @@ export type Drawing = {
   theme: string
   imagePublicId: string
   result: AIResult
-  createdAt: number
+  createdAt: string
 }
