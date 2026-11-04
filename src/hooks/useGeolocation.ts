@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
 import type { TrailPoint } from '../types'
 
-const MIN_ACCURACY = 30 // 精度が30m以下の点だけ使う（ノイズ除去）
-const MIN_DISTANCE = 3 // 前の点から3m以上動いたら追加
+const MIN_ACCURACY = 30 // 測位誤差が30m以内の点だけ使い、精度の低い点を除去する
+const MIN_DISTANCE = 3 // 前回採用した点から3m以上の移動を記録し、細かな揺れを除去する
+const MAX_SPEED_KMH = 15 // 通常の歩行（3〜5km/h）や小走りを許容する速度上限
 
 function distanceMeters(a: TrailPoint, b: TrailPoint): number {
   const R = 6371000
@@ -48,7 +49,15 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
           lng: pos.coords.longitude,
           t: Date.now(),
         }
-        if (lastRef.current && distanceMeters(lastRef.current, point) < MIN_DISTANCE) return
+        if (lastRef.current) {
+          const distance = distanceMeters(lastRef.current, point)
+          if (distance < MIN_DISTANCE) return
+
+          const elapsedSeconds = (point.t - lastRef.current.t) / 1000
+          if (elapsedSeconds <= 0) return
+          const speedKmh = (distance / elapsedSeconds) * 3.6
+          if (speedKmh > MAX_SPEED_KMH) return
+        }
         lastRef.current = point
         setTrail((prev) => [...prev, point])
       },
