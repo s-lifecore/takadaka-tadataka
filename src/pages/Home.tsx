@@ -20,10 +20,10 @@ export function Home() {
       </ul>
 
       <button
-        onClick={() => navigate('/map')}
+        onClick={() => navigate('/playalone')}
         className="w-full max-w-sm py-4 bg-black text-white text-lg font-semibold rounded-2xl"
       >
-        スタート
+        ひとりで遊ぶ
       </button>
       <button
         type="button"

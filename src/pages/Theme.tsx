@@ -1,22 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-type Props = { onBack: () => void; onStart: () => void }
-
-export function Theme({ onBack, onStart }: Props) {
-  const [count, setCount] = useState<number | null>(null)
-  useEffect(() => {
-    if (count === null) return
-    const timer = window.setTimeout(() => {
-      if (count === 1) onStart()
-      else setCount(count - 1)
-    }, 1000)
-    return () => window.clearTimeout(timer)
-  }, [count, onStart])
-
+export function Theme() {
+  const navigate = useNavigate()
   return (
     <main className="theme-page">
       <header className="theme-header">
-        <button onClick={onBack}>〈 もどる</button>
+        <button onClick={() => navigate('/')}>〈 もどる</button>
         <span>ひとりで遊ぶ</span>
         <span className="theme-compass" aria-hidden="true">
           ♧
@@ -88,18 +77,11 @@ export function Theme({ onBack, onStart }: Props) {
             </p>
           </div>
         </aside>
-        <button className="theme-start" onClick={() => setCount(3)}>
+        <button className="theme-start" onClick={() => navigate('/map')}>
           ♧ 冒険スタート！
         </button>
         <p className="theme-hint">ボタンを押すと 3・2・1 で記録が始まるよ</p>
       </div>
-      {count !== null && (
-        <div className="theme-countdown" role="status" aria-live="assertive">
-          <p>冒険に出かけよう！</p>
-          <strong key={count}>{count}</strong>
-          <button onClick={() => setCount(null)}>キャンセル</button>
-        </div>
-      )}
     </main>
   )
 }

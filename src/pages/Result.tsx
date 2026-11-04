@@ -1,84 +1,79 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { loadDrawing, saveResult } from '../lib/drawings'
+import { TrailCanvas } from '../components/TrailCanvas'
 import { AdvancedImage } from '@cloudinary/react'
 import { Cloudinary } from '@cloudinary/url-gen'
 import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { TrailCanvas } from '../components/TrailCanvas'
-import { saveDrawing, signInAnon } from '../lib/firebase'
+import { uploadDrawingImage } from '../lib/cloudinary'
 import { judgeDrawing } from '../lib/gemini'
-import { loadTrail } from '../lib/drawings'
 import type { AIResult, TrailPoint } from '../types'
 
 export function Result() {
   const { id } = useParams<{ id: string }>()
+  return <DrawingResult key={id} id={id!} />
+}
+
+function DrawingResult({ id }: { id: string }) {
+  const navigate = useNavigate()
   const [trail, setTrail] = useState<TrailPoint[] | null>(null)
+  const [theme, setTheme] = useState('りんご')
+  const [imagePublicId, setImagePublicId] = useState<string | null>(null)
+  const uploadedImage = useRef<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const started = useRef(false)
+  const [result, setResult] = useState<AIResult | null>(null)
+  const [judging, setJudging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id) return
     let active = true
-    loadTrail(id).then(
-      (value) => {
-        if (active) setTrail(value)
-      },
-      (error: unknown) => {
-        if (active) setError(String(error))
-      },
-    )
+    loadDrawing(id)
+      .then((drawing) => {
+        if (!active) return
+        setTheme(drawing.theme)
+        uploadedImage.current = drawing.imagePublicId ?? null
+        setImagePublicId(drawing.imagePublicId ?? null)
+        if (drawing.result) {
+          started.current = true
+          setResult(drawing.result)
+          setSaved(true)
+        }
+        setTrail(drawing.trail)
+      })
+      .catch(() => {
+        if (active) setError('結果を読み込めませんでした。URLと通信環境を確認してください。')
+      })
     return () => {
       active = false
     }
   }, [id])
 
-  if (error)
-    return (
-      <div className="p-6">
-        <p role="alert">{error}</p>
-        <Link to="/">ホームへ戻る</Link>
-      </div>
-    )
-  if (!trail) return <p className="p-6">作品を読み込み中…</p>
-  return <DrawingResult trail={trail} />
-}
-
-function DrawingResult({ trail }: { trail: TrailPoint[] }) {
-  const navigate = useNavigate()
-  const started = useRef(false)
-  const [result, setResult] = useState<AIResult | null>(null)
-  const [judging, setJudging] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [imagePublicId, setImagePublicId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const processedImage = useRef<string | null>(null)
-
-  const handleCanvasReady = useCallback(async (base64: string) => {
-    if (processedImage.current === base64) return
-    processedImage.current = base64
-
-    if (started.current) return
-    started.current = true
-    setJudging(true)
-    setSaved(false)
-    setError(null)
-    const theme = 'りんご'
-    try {
-      const res = await judgeDrawing(base64, theme)
-      setResult(res)
-      setJudging(false)
-      setSaving(true)
-      const user = await signInAnon()
-      const savedDrawing = await saveDrawing(user.uid, theme, base64, res)
-      setImagePublicId(savedDrawing.imagePublicId)
-      setSaved(true)
-    } catch (e: unknown) {
-      setError(String(e))
-    } finally {
-      setJudging(false)
-      setSaving(false)
-    }
-  }, [])
+  const handleCanvasReady = useCallback(
+    async (base64: string) => {
+      if (started.current) return
+      started.current = true
+      setJudging(true)
+      try {
+        const res = await judgeDrawing(base64, theme)
+        setResult(res)
+        setSaving(true)
+        if (!uploadedImage.current)
+          uploadedImage.current = (await uploadDrawingImage(base64)).publicId
+        await saveResult(id, res, uploadedImage.current)
+        setImagePublicId(uploadedImage.current)
+        setSaved(true)
+      } catch (e) {
+        setError(String(e))
+      } finally {
+        setJudging(false)
+        setSaving(false)
+      }
+    },
+    [id, theme],
+  )
 
   const cloudinary = new Cloudinary({
     cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
@@ -95,12 +90,14 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
     <div className="flex flex-col items-center min-h-screen bg-white p-6 gap-6">
       <h2 className="text-2xl font-bold">結果</h2>
 
-      {trail.length < 2 && <p>採点に必要な軌跡がありません。もう一度お試しください。</p>}
-
       <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
-        <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+        {trail && <TrailCanvas trail={trail} onReady={handleCanvasReady} />}
       </div>
 
+      {!trail && !error && <p>結果を読み込み中...</p>}
+      {trail && trail.length < 2 && (
+        <p>軌跡が足りないため採点できません。もう一度歩いてみましょう。</p>
+      )}
       {judging && <p className="text-gray-500">AI が判定中...</p>}
       {saving && <p className="text-gray-500">結果を保存中...</p>}
       {saved && <p className="text-green-600">保存しました</p>}
@@ -122,9 +119,6 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
           <p className="text-center text-gray-700">
             AIの答え：<strong>{result.guess}</strong>
           </p>
-          <p className="text-center text-gray-700">
-            AIの答え：<strong>{result.guess}</strong>
-          </p>
           <p className="text-sm text-gray-500">{result.reason}</p>
         </div>
       )}
@@ -133,7 +127,7 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
         onClick={() => navigate('/')}
         className="w-full max-w-sm py-4 border-2 border-black text-black text-lg font-semibold rounded-2xl"
       >
-        もう一度
+        ホームに戻る
       </button>
     </div>
   )
