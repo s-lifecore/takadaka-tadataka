@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AdvancedImage } from '@cloudinary/react'
+import { Cloudinary } from '@cloudinary/url-gen'
+import { auto } from '@cloudinary/url-gen/actions/resize'
+import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
+import { uploadDrawingImage } from '../lib/cloudinary'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
@@ -16,6 +21,7 @@ function LoadResult({ id }: { id: string }) {
     theme: string
     trail: TrailPoint[]
     result?: AIResult
+    imagePublicId?: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
@@ -50,6 +56,7 @@ function LoadResult({ id }: { id: string }) {
       trail={drawing.trail}
       theme={drawing.theme}
       savedResult={drawing.result}
+      savedImagePublicId={drawing.imagePublicId}
     />
   )
 }
@@ -59,16 +66,20 @@ function DrawingResult({
   trail,
   theme,
   savedResult,
+  savedImagePublicId,
 }: {
   id: string
   trail: TrailPoint[]
   theme: string
   savedResult?: AIResult
+  savedImagePublicId?: string
 }) {
   const navigate = useNavigate()
   const [result, setResult] = useState<AIResult | null>(savedResult ?? null)
   const [judging, setJudging] = useState(!savedResult && trail.length >= 2)
   const [error, setError] = useState<string | null>(null)
+  const [imagePublicId, setImagePublicId] = useState(savedImagePublicId ?? null)
+  const uploadedImage = useRef(savedImagePublicId ?? null)
   const requested = useRef(!!savedResult)
   const image = useRef<string | null>(null)
 
@@ -82,7 +93,11 @@ function DrawingResult({
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
-        await saveResult(id, res)
+        if (!uploadedImage.current) {
+          uploadedImage.current = (await uploadDrawingImage(base64)).publicId
+        }
+        await saveResult(id, res, uploadedImage.current)
+        setImagePublicId(uploadedImage.current)
       } catch {
         setError('作品の判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
       } finally {
@@ -91,6 +106,17 @@ function DrawingResult({
     },
     [id, theme, result],
   )
+
+  const cloudinary = new Cloudinary({
+    cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
+  })
+  const generatedImage = imagePublicId
+    ? cloudinary
+        .image(imagePublicId)
+        .format('auto')
+        .quality('auto')
+        .resize(auto().gravity(autoGravity()).width(500).height(500))
+    : null
 
   if (judging) {
     return (
@@ -131,6 +157,11 @@ function DrawingResult({
         </div>
       )}
 
+      {generatedImage && (
+        <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
+          <AdvancedImage cldImg={generatedImage} />
+        </div>
+      )}
       {result && (
         <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
           <div className="text-center">
