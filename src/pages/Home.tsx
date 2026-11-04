@@ -1,37 +1,167 @@
+import { useEffect, useRef, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+function Icon({ kind }: { kind: 'compass' | 'steps' | 'people' | 'book' | 'guide' }) {
+  const names = {
+    compass: 'explore',
+    steps: 'directions_walk',
+    people: 'people',
+    book: 'collections_bookmark',
+    guide: 'menu_book',
+  }
+  return (
+    <span className="material-icons home-icon" aria-hidden="true">
+      {names[kind]}
+    </span>
+  )
+}
+
+function Illustration() {
+  return (
+    <svg className="home-illustration" viewBox="0 0 328 194" fill="none" aria-hidden="true">
+      <path
+        d="M8 46c45-26 53 28 99 9s50 60 99 32 55-39 90-6M10 131l29-32"
+        stroke="#BD8C5E"
+        strokeWidth="3"
+        strokeDasharray="2 12"
+        strokeLinecap="round"
+      />
+      <g stroke="#735339" strokeWidth="2">
+        <circle cx="68" cy="74" r="32" fill="#F5E9D3" />
+        <circle cx="68" cy="74" r="26" stroke="#C8A780" strokeDasharray="1 4" />
+        <path d="M68 48v6m0 40v6M42 74h6m40 0h6" />
+        <path d="m68 54 8 22-8 17-8-17Z" fill="#D68A59" />
+        <circle cx="68" cy="74" r="4" fill="#FFF9ED" />
+      </g>
+      <path
+        d="M164 64c-32-28-61 13-44 54 11 28 24 33 39 26 14-7 18 8 35 1 30-13 38-58 6-81-12-8-24-7-36 0Z"
+        fill="#EAA38A"
+        stroke="#73503B"
+        strokeWidth="3"
+      />
+      <path d="M137 82c-7 17-3 34 7 47" stroke="#FFE0C5" strokeWidth="7" strokeLinecap="round" />
+      <path
+        d="M164 64c-4-17 4-27 13-31m-24 26c13 10 24 8 34-2"
+        stroke="#73503B"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M167 50c12-17 30-15 42-12-8 18-23 23-42 12Z"
+        fill="#B4BE99"
+        stroke="#73503B"
+        strokeWidth="3"
+      />
+      <g transform="rotate(10 269 122)" stroke="#79583B" strokeWidth="2.5">
+        <rect x="244" y="91" width="51" height="66" rx="4" fill="#FFFAEE" />
+        <path d="M249 96v56h40" stroke="#D5BB90" />
+        <path d="M256 108h24m-24 11h24m-24 11h18" stroke="#C4A17A" strokeWidth="2" />
+        <path d="m239 118 2-14 8-13 6 4-8 14Z" fill="#D79051" />
+      </g>
+      <path
+        d="m240 30 3 8 8 3-8 3-3 9-3-9-8-3 8-3Zm28 22 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+        fill="#D8AB70"
+      />
+      <text x="164" y="187" textAnchor="middle" fill="#B7845D" fontSize="8">
+        WALK · DRAW · DISCOVER
+      </text>
+    </svg>
+  )
+}
 
 export function Home() {
   const navigate = useNavigate()
+  const [panel, setPanel] = useState<'works' | null>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    if (panel) dialogRef.current?.showModal()
+    else dialogRef.current?.close()
+  }, [panel])
+
+  function handleDialogClick(event: MouseEvent<HTMLDialogElement>) {
+    if (event.target !== event.currentTarget) return
+
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const outside =
+      event.clientX < bounds.left ||
+      event.clientX > bounds.right ||
+      event.clientY < bounds.top ||
+      event.clientY > bounds.bottom
+
+    if (outside) setPanel(null)
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-8 p-6 bg-white">
-      <h1 className="text-3xl font-bold">高々忠敬</h1>
-      <p className="text-center text-gray-600">歩いて絵を描こう</p>
-
-      <div className="bg-gray-100 rounded-xl p-6 w-full max-w-sm text-center">
-        <p className="text-sm text-gray-500 mb-1">今回のお題</p>
-        <p className="text-5xl font-bold">🍎 りんご</p>
+    <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
+      <header className="home-top flex items-center justify-between">
+        <span className="home-badge">
+          <Icon kind="compass" />
+          旅のスケッチブック
+        </span>
+      </header>
+      <div className="home-title">
+        <h1>高々忠敬</h1>
+        <p>歩いた道が、絵になる。</p>
+        <span />
       </div>
-
-      <ul className="text-sm text-gray-500 space-y-1 list-disc list-inside">
-        <li>制限時間：15分</li>
-        <li>画面を見ながら歩かない</li>
-        <li>終了後にAIが採点します</li>
-      </ul>
-
-      <button
-        onClick={() => navigate('/map')}
-        className="w-full max-w-sm py-4 bg-black text-white text-lg font-semibold rounded-2xl"
+      <div className="home-picture">
+        <Illustration />
+      </div>
+      <section className="home-adventure">
+        <h2>どの冒険に出かける？</h2>
+        <p>あしあとから、絵を生みだそう</p>
+        <button className="home-solo" onClick={() => navigate('/map')}>
+          <Icon kind="steps" />
+          <span>
+            <strong>ひとりで遊ぶ</strong>
+            <small>お題を歩いて描こう！</small>
+          </span>
+          <span className="home-action-icon">
+            <Icon kind="steps" />
+          </span>
+        </button>
+        <button className="home-multi" disabled>
+          <Icon kind="people" />
+          <span>
+            <strong>みんなで遊ぶ</strong>
+            <small>友達と冒険しよう！</small>
+          </span>
+          <b>準備中</b>
+        </button>
+      </section>
+      <div className="home-links mt-[18px] grid grid-cols-2 gap-[11px]">
+        <button onClick={() => setPanel('works')}>
+          <Icon kind="book" />
+          <strong>作品帳</strong>
+          <small>旅の思い出を見る</small>
+        </button>
+        <button onClick={() => navigate('/rules')}>
+          <Icon kind="guide" />
+          <strong>あそびかた</strong>
+          <small>ルールを確認する</small>
+        </button>
+      </div>
+      <footer className="home-footer">
+        <Icon kind="steps" />
+        <span>歩いて、描いて、AIに見せよう！</span>
+        <Icon kind="steps" />
+      </footer>
+      <dialog
+        ref={dialogRef}
+        className="home-dialog"
+        aria-labelledby="home-dialog-title"
+        onCancel={() => setPanel(null)}
+        onClose={() => setPanel(null)}
+        onClick={handleDialogClick}
       >
-        スタート
-      </button>
-      <button
-        type="button"
-        onClick={() => navigate('/rules')}
-        className="w-full max-w-sm py-4 border border-[#c89f76] bg-[#fffaf0] text-[#604733] text-lg font-semibold rounded-2xl"
-      >
-        あそびかた
-      </button>
-    </div>
+        <h2 id="home-dialog-title">作品帳</h2>
+        <p>保存した作品を一覧で見る画面は準備中です。</p>
+        <button autoFocus onClick={() => setPanel(null)}>
+          閉じる
+        </button>
+      </dialog>
+    </main>
   )
 }
