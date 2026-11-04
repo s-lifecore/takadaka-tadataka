@@ -476,6 +476,187 @@ body,
   font-size: 10px;
 }
 
+.judgement-page {
+  min-height: 100svh;
+  padding: max(30px, env(safe-area-inset-top)) 18px max(17px, env(safe-area-inset-bottom));
+  background: #f6efe4;
+  color: #604733;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+}
+.judgement-content {
+  max-width: 420px;
+  margin: 0 auto;
+}
+.judgement-header {
+  text-align: center;
+  font-size: 12px;
+  line-height: 20px;
+}
+.judgement-heading {
+  margin-top: 65px;
+  text-align: center;
+}
+.judgement-heading h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 34px;
+}
+.judgement-heading p {
+  margin: 9px 0 0;
+  color: #9b7855;
+  font-size: 12px;
+  line-height: 20px;
+}
+.judgement-artwork {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 276px;
+  margin: 38px 4px 0;
+  padding: 18px 18px 34px;
+  border: 1px solid #c89f76;
+  border-radius: 18px;
+  background: #fffaf0;
+}
+.judgement-preview {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  text-align: center;
+}
+.judgement-preview canvas {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.judgement-artwork > p {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.judgement-walk {
+  max-width: 320px;
+  margin: 22px auto 0;
+  color: #a36034;
+}
+.judgement-walk > svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.judgement-walk-guide,
+.judgement-walk-trail {
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.judgement-walk-guide {
+  stroke: #dfd2bd;
+  stroke-dasharray: 3 7;
+}
+.judgement-walk-trail {
+  stroke: #df894e;
+  stroke-dasharray: 1;
+  animation: judgement-draw 3s linear infinite;
+}
+.judgement-walker {
+  offset-path: path('M20 58 Q90 18 160 58 T300 58');
+  offset-rotate: 0deg;
+  animation: judgement-stroll 3s linear infinite;
+}
+.judgement-walker path {
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.judgement-arm {
+  transform-origin: 16px 18px;
+  animation: judgement-step 0.6s ease-in-out infinite alternate;
+}
+.judgement-leg {
+  transform-origin: 16px 29px;
+  animation: judgement-step 0.6s ease-in-out infinite alternate;
+}
+.judgement-arm-back,
+.judgement-leg-back {
+  animation-delay: -0.6s;
+}
+.judgement-caption {
+  margin: 33px 0 0;
+  text-align: center;
+  color: #9b7855;
+  font-size: 11px;
+  line-height: 20px;
+}
+.judgement-notice {
+  margin-top: 47px;
+  padding: 20px 14px 16px;
+  border-radius: 15px;
+  background: #f0e3ce;
+}
+.judgement-notice p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 15px;
+}
+.judgement-footer {
+  margin: 17px 0 0;
+  text-align: center;
+  color: #9b7855;
+  font-size: 10px;
+  line-height: 16px;
+}
+@keyframes judgement-stroll {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+@keyframes judgement-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes judgement-step {
+  from {
+    transform: rotate(-25deg);
+  }
+  to {
+    transform: rotate(25deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .judgement-walker,
+  .judgement-arm,
+  .judgement-leg,
+  .judgement-walk-trail {
+    animation: none;
+  }
+  .judgement-walker {
+    offset-distance: 50%;
+  }
+}
+@media (max-height: 700px) {
+  .judgement-heading {
+    margin-top: 36px;
+  }
+  .judgement-artwork {
+    margin-top: 26px;
+    height: 240px;
+  }
+  .judgement-notice {
+    margin-top: 30px;
+  }
+}
+
 .rules-page {
   min-height: 100svh;
   padding: max(20px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom));

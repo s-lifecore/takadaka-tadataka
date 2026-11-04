@@ -3,58 +3,114 @@ import { AdvancedImage } from '@cloudinary/react'
 import { Cloudinary } from '@cloudinary/url-gen'
 import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
+import { uploadDrawingImage } from '../lib/cloudinary'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { loadDrawing, saveResult } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { saveDrawing, signInAnon } from '../lib/firebase'
 import { judgeDrawing } from '../lib/gemini'
-import { loadTrail } from '../lib/drawings'
 import type { AIResult, TrailPoint } from '../types'
+import { Judgement } from './Judgement'
+
+const MIN_JUDGEMENT_MS = 3000
 
 export function Result() {
   const { id } = useParams<{ id: string }>()
-  const [trail, setTrail] = useState<TrailPoint[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  return <LoadResult key={id} id={id!} />
+}
 
+function LoadResult({ id }: { id: string }) {
+  const [drawing, setDrawing] = useState<{
+    theme: string
+    trail: TrailPoint[]
+    result?: AIResult
+    imagePublicId?: string
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
   useEffect(() => {
-    if (!id) return
     let active = true
-    loadTrail(id).then(
-      (value) => {
-        if (active) setTrail(value)
-      },
-      (error: unknown) => {
-        if (active) setError(String(error))
-      },
-    )
+    loadDrawing(id)
+      .then((value) => {
+        if (active) setDrawing(value)
+      })
+      .catch(() => {
+        if (active) setError('作品を読み込めませんでした。URLと通信環境を確認してください。')
+      })
     return () => {
       active = false
     }
   }, [id])
-
   if (error)
     return (
-      <div className="p-6">
+      <main className="p-6">
         <p role="alert">{error}</p>
         <Link to="/">ホームへ戻る</Link>
-      </div>
+      </main>
     )
-  if (!trail) return <p className="p-6">作品を読み込み中…</p>
-  return <DrawingResult key={id} trail={trail} id={id!} />
+  if (!drawing)
+    return (
+      <main className="p-6" role="status">
+        作品を読み込み中…
+      </main>
+    )
+  return (
+    <DrawingResult
+      id={id}
+      trail={drawing.trail}
+      theme={drawing.theme}
+      savedResult={drawing.result}
+      savedImagePublicId={drawing.imagePublicId}
+    />
+  )
 }
 
-function DrawingResult({ trail, id }: { trail: TrailPoint[]; id: string }) {
+function DrawingResult({
+  id,
+  trail,
+  theme,
+  savedResult,
+  savedImagePublicId,
+}: {
+  id: string
+  trail: TrailPoint[]
+  theme: string
+  savedResult?: AIResult
+  savedImagePublicId?: string
+}) {
   const navigate = useNavigate()
-  const started = useRef(false)
-  const [result, setResult] = useState<AIResult | null>(null)
-  const [judging, setJudging] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [imagePublicId, setImagePublicId] = useState<string | null>(null)
+  const [result, setResult] = useState<AIResult | null>(savedResult ?? null)
+  const [judging, setJudging] = useState(!savedResult && trail.length >= 2)
   const [error, setError] = useState<string | null>(null)
-  const processedImage = useRef<string | null>(null)
+  const [imagePublicId, setImagePublicId] = useState(savedImagePublicId ?? null)
+  const uploadedImage = useRef(savedImagePublicId ?? null)
+  const requested = useRef(!!savedResult)
+  const image = useRef<string | null>(null)
 
   const handleCanvasReady = useCallback(
     async (base64: string) => {
+      if (requested.current) return
+      requested.current = true
+      image.current = base64
+      setError(null)
+      setJudging(true)
+      const minimumDisplay = new Promise<void>((resolve) => {
+        window.setTimeout(resolve, MIN_JUDGEMENT_MS)
+      })
+      try {
+        const res = result ?? (await judgeDrawing(base64, theme))
+        setResult(res)
+        if (!uploadedImage.current) {
+          uploadedImage.current = (await uploadDrawingImage(base64)).publicId
+        }
+        await saveResult(id, res, uploadedImage.current)
+        setImagePublicId(uploadedImage.current)
+      } catch {
+        setError('作品の判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
+      } finally {
+        await minimumDisplay
+        setJudging(false)
+      }
+    },
+    [id, theme, result],
       if (processedImage.current === base64) return
       processedImage.current = base64
 
@@ -86,7 +142,7 @@ function DrawingResult({ trail, id }: { trail: TrailPoint[]; id: string }) {
   const cloudinary = new Cloudinary({
     cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
   })
-  const image = imagePublicId
+  const generatedImage = imagePublicId
     ? cloudinary
         .image(imagePublicId)
         .format('auto')
@@ -94,28 +150,50 @@ function DrawingResult({ trail, id }: { trail: TrailPoint[]; id: string }) {
         .resize(auto().gravity(autoGravity()).width(500).height(500))
     : null
 
+  if (judging) {
+    return (
+      <Judgement>
+        <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+      </Judgement>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-white p-6 gap-6">
       <h2 className="text-2xl font-bold">結果</h2>
-
-      {trail.length < 2 && <p>採点に必要な軌跡がありません。もう一度お試しください。</p>}
 
       <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
         <TrailCanvas trail={trail} onReady={handleCanvasReady} />
       </div>
 
-      {judging && <p className="text-gray-500">AI が判定中...</p>}
-      {saving && <p className="text-gray-500">結果を保存中...</p>}
-      {saved && <p className="text-green-600">保存しました</p>}
+      {trail.length < 2 && (
+        <p className="text-center text-gray-600">
+          判定できる軌跡がありません。位置情報を有効にして、もう一度歩いてみてください。
+        </p>
+      )}
 
-      {image && (
-        <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
-          <AdvancedImage cldImg={image} />
+      {error && (
+        <div className="text-center space-y-3" role="alert">
+          <p className="text-red-500 text-sm">{error}</p>
+          <button
+            type="button"
+            className="underline"
+            onClick={() => {
+              if (!image.current) return
+              requested.current = false
+              void handleCanvasReady(image.current)
+            }}
+          >
+            {result ? '保存を再試行する' : 'もう一度判定する'}
+          </button>
         </div>
       )}
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-
+      {generatedImage && (
+        <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
+          <AdvancedImage cldImg={generatedImage} />
+        </div>
+      )}
       {result && (
         <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
           <div className="text-center">

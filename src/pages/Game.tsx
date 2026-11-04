@@ -12,7 +12,7 @@ const GAME_SECONDS = 15 * 60
 
 export function Game() {
   const { id } = useParams<{ id: string }>()
-  return id ? <LoadGame id={id} /> : <StartCountdown />
+  return id ? <LoadGame key={id} id={id} /> : <StartCountdown />
 }
 
 function StartCountdown() {
