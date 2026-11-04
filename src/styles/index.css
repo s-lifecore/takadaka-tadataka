@@ -113,16 +113,6 @@ body,
   margin: 0 auto;
   text-align: center;
 }
-.ready-footer button {
-  width: 100%;
-  min-height: 54px;
-  border: 1px solid #c89f76;
-  border-radius: 15px;
-  background: #fffaf0;
-  box-shadow: 0 4px 0 #bfa484;
-  font-size: 16px;
-  font-weight: 700;
-}
 .ready-footer p {
   margin: 16px 0 0;
   color: #9a7956;

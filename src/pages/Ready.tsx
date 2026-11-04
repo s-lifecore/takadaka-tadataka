@@ -51,9 +51,6 @@ export function Ready({ onCancel, onStart }: Props) {
       </aside>
 
       <footer className="ready-footer">
-        <button type="button" onClick={onCancel}>
-          キャンセル
-        </button>
         <p>この画面は3 → 2 → 1で自動的に切り替わります</p>
       </footer>
     </main>
