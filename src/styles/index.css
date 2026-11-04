@@ -192,11 +192,146 @@ body,
 .walking-actions button:active {
   transform: translateY(1px);
 }
+.walking-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .walking-footer > p {
   margin: 15px 0 0;
   text-align: center;
   color: #a28b70;
   font-size: 10px;
+}
+
+.rules-page {
+  min-height: 100svh;
+  padding: max(20px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom));
+  background: #f6efe4;
+  color: #604733;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+}
+.rules-content {
+  max-width: 420px;
+  margin: 0 auto;
+}
+.rules-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 31px;
+}
+.rules-header h1 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 18px;
+}
+.rules-heading {
+  margin-top: 33px;
+  text-align: center;
+}
+.rules-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 30px;
+}
+.rules-heading p {
+  margin: 10px 0 0;
+  color: #a0805d;
+  font-size: 10px;
+  line-height: 18px;
+}
+.rules-steps {
+  display: grid;
+  gap: 11px;
+  margin: 23px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.rules-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 84px;
+  padding: 13px 10px;
+  border: 1px solid #c89f76;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+.rules-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 31px;
+  height: 32px;
+  border-radius: 10px;
+  background: #f8dec3;
+  color: #a36034;
+  font-size: 15px;
+  font-weight: 700;
+}
+.rules-steps h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 19px;
+}
+.rules-steps p {
+  margin: 6px 0 0;
+  color: #a0805d;
+  font-size: 10px;
+  line-height: 13px;
+}
+.rules-safety {
+  margin-top: 28px;
+  padding: 10px 16px 12px 40px;
+  border-radius: 13px;
+  background: #f0e3ce;
+}
+.rules-safety h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+}
+.rules-safety p {
+  margin: 8px 0 0;
+  color: #a0805d;
+  font-size: 10px;
+  line-height: 13px;
+}
+.rules-footer {
+  margin-top: 30px;
+  text-align: center;
+}
+.rules-footer button {
+  width: 100%;
+  min-height: 47px;
+  padding: 12px;
+  border: 1px solid #c89f76;
+  border-radius: 14px;
+  background: #fffaf0;
+  box-shadow: 0 4px 0 #bfa484;
+  font-size: 14px;
+  font-weight: 700;
+}
+.rules-footer p {
+  margin: 14px 0 0;
+  color: #a0805d;
+  font-size: 9px;
+  line-height: 16px;
+}
+.rules-page button {
+  color: inherit;
+  cursor: pointer;
+}
+.rules-page button:focus-visible {
+  outline: 3px solid #a36034;
+  outline-offset: 4px;
+}
+.rules-page button:active {
+  transform: translateY(1px);
 }
 
 .walking-warning {

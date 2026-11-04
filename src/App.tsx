@@ -1,15 +1,19 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Game } from './pages/Game'
 import { Home } from './pages/Home'
 import { Result } from './pages/Result'
+import { Rules } from './pages/Rules'
 
 export function App() {
+  const { pathname } = useLocation()
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/map" element={<Game />} />
-      <Route path="/map/:id" element={<Game />} />
-      <Route path="/result/:id" element={<Result />} />
+      <Route path="/rules" element={<Rules />} />
+      <Route path="/map" element={<Game key={pathname} />} />
+      <Route path="/map/:id" element={<Game key={pathname} />} />
+      <Route path="/result/:id" element={<Result key={pathname} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

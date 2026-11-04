@@ -20,7 +20,16 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
   const [trail, setTrail] = useState<TrailPoint[]>(initialTrail)
   const [error, setError] = useState<string | null>(null)
   const watchIdRef = useRef<number | null>(null)
-  const lastRef = useRef<TrailPoint | null>(initialTrail.at(-1) ?? null)
+  const lastRef = useRef<TrailPoint | null>(initialTrail[initialTrail.length - 1] ?? null)
+  const isPausedRef = useRef(false)
+
+  const pause = useCallback(() => {
+    isPausedRef.current = true
+  }, [])
+
+  const resume = useCallback(() => {
+    isPausedRef.current = false
+  }, [])
 
   const start = useCallback(() => {
     if (watchIdRef.current !== null) return
@@ -31,8 +40,8 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        if (watchIdRef.current === null) return
         setError(null)
+        if (watchIdRef.current === null || isPausedRef.current) return
         if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {
           lat: pos.coords.latitude,
@@ -55,5 +64,5 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
     }
   }, [])
 
-  return { trail, error, start, stop }
+  return { trail, error, start, stop, pause, resume }
 }

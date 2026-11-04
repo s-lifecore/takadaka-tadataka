@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { TrailPoint } from '../types'
@@ -9,16 +8,14 @@ type Props = {
 
 function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
   const map = useMap()
-  const last = trail.at(-1)
-  useEffect(() => {
-    if (last) map.panTo([last.lat, last.lng])
-  }, [last, map])
+  const last = trail[trail.length - 1]
+  if (last) map.panTo([last.lat, last.lng])
   return null
 }
 
 export function MapView({ trail }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = trail.at(-1) ?? { lat: 36.5748, lng: 136.5975 } // 金沢大学
+  const center = trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
 
   return (
     <MapContainer
