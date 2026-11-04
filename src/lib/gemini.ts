@@ -1,39 +1,147 @@
-import type { AIResult } from '../types'
+// src/lib/gemini.ts
 
-// TODO(AI担当): Firebase AI Logic 経由に変更してAPIキーをフロントから除去する
-const GEMINI_MODEL = 'gemini-3.6-flash'
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+import {
+  getAI,
+  getGenerativeModel,
+  GoogleAIBackend,
+  Schema,
+} from "firebase/ai";
 
-const RUBRIC = `
-採点基準（theme: りんご）:
-- 80-100: 全体的な丸みとへた部分が認識でき、りんごとはっきりわかる
-- 50-79: 丸い形はあるが特徴が薄い
-- 0-49: 形がほぼ判別できない
+import { app } from "./firebase";
 
-必ずJSON形式で返すこと: { "score": number, "guess": string, "reason": string }
-`
+import { createScoringPrompt } from "./aiPrompt";
 
-export async function judgeDrawing(imageBase64: string, theme: string): Promise<AIResult> {
-  const body = {
-    contents: [
-      {
-        parts: [
-          { text: `お題は「${theme}」です。この絵を採点してください。\n${RUBRIC}` },
-          { inline_data: { mime_type: 'image/png', data: imageBase64 } },
-        ],
-      },
-    ],
-    generationConfig: { response_mime_type: 'application/json' },
+import type {
+  AIResult,
+  AIInput,
+} from "../types/ai";
+
+
+// ① Firebase AI Logicを初期化
+const ai = getAI(app, {
+  backend: new GoogleAIBackend(),
+});
+
+
+// ② AIから返してもらうJSON形式を指定
+const responseSchema = Schema.object({
+  properties: {
+    score: Schema.integer(),
+    reason: Schema.string(),
+  },
+});
+
+
+// ③ 使用するGeminiモデルを設定
+const modelName =
+  import.meta.env.VITE_GEMINI_MODEL ||
+  "gemini-2.5-flash";
+
+const model = getGenerativeModel(ai, {
+  model: modelName,
+
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: responseSchema,
+    temperature: 0,
+  },
+});
+
+
+// ④ AIの回答が正しいデータか確認する
+function validateResult(data: unknown): AIResult {
+
+  if (
+    typeof data !== "object" ||
+    data === null
+  ) {
+    throw new Error("AIの回答形式が不正です");
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-  )
+  const obj = data as Record<string, unknown>;
 
-  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`)
+  // scoreの確認
+  if (
+    typeof obj.score !== "number" ||
+    !Number.isInteger(obj.score) ||
+    obj.score < 0 ||
+    obj.score > 100
+  ) {
+    throw new Error("AIのスコアが不正です");
+  }
 
-  const data = await res.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
-  return JSON.parse(text) as AIResult
+  // reasonの確認
+  if (
+    typeof obj.reason !== "string" ||
+    obj.reason.trim().length === 0
+  ) {
+    throw new Error("AIの採点理由が不正です");
+  }
+
+  return {
+    score: obj.score,
+    reason: obj.reason,
+  };
+}
+
+
+// ⑤ AI判定を実行する関数
+export async function judgeDrawing({
+  theme,
+  imageBase64,
+}: AIInput): Promise<AIResult> {
+
+  // 入力の確認
+  if (!theme.trim()) {
+    throw new Error("お題が設定されていません");
+  }
+
+  if (!imageBase64.trim()) {
+    throw new Error("画像がありません");
+  }
+
+  // PNGのData URLからBase64部分を取り出す
+  const base64 = imageBase64.trim().replace(
+    /^data:image\/png;base64,/,
+    ""
+  );
+
+  // Base64形式であることを確認
+  if (
+    !base64 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)
+  ) {
+    throw new Error("PNG画像の形式が不正です");
+  }
+
+  // プロンプト作成
+  const prompt = createScoringPrompt(theme);
+
+  // Geminiにお題と画像を送信
+  const response = await model.generateContent([
+    prompt,
+    {
+      inlineData: {
+        mimeType: "image/png",
+        data: base64,
+      },
+    },
+  ]);
+
+  // Geminiの返答を取得
+  const text = response.response.text();
+
+  // JSONとして解析
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error(
+      "Geminiの回答をJSONとして読み取れません"
+    );
+  }
+
+  // データの形式を検証して返す
+  return validateResult(parsed);
 }

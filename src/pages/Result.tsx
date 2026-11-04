@@ -64,7 +64,7 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
     setError(null)
     const theme = 'りんご'
     try {
-      const res = await judgeDrawing(base64, theme)
+      const res = await judgeDrawing({ imageBase64: base64, theme: 'りんご' })
       setResult(res)
       setJudging(false)
       setSaving(true)
@@ -119,12 +119,6 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
             <span className="text-6xl font-bold">{result.score}</span>
             <span className="text-2xl text-gray-400">/100</span>
           </div>
-          <p className="text-center text-gray-700">
-            AIの答え：<strong>{result.guess}</strong>
-          </p>
-          <p className="text-center text-gray-700">
-            AIの答え：<strong>{result.guess}</strong>
-          </p>
           <p className="text-sm text-gray-500">{result.reason}</p>
         </div>
       )}

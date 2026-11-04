@@ -4,11 +4,8 @@ export type TrailPoint = {
   t: number // Unix timestamp (ms)
 }
 
-export type AIResult = {
-  score: number // 0-100
-  guess: string
-  reason: string
-}
+import type { AIResult } from './ai';
+export type { AIResult } from './ai';
 
 export type Drawing = {
   uid: string

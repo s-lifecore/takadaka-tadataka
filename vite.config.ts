@@ -6,6 +6,11 @@ export default defineConfig({
   resolve: {
     extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
   },
+  build: {
+    rollupOptions: {
+      input: { main: 'index.html', aiTest: 'ai-test.html' },
+    },
+  },
   server: {
     allowedHosts: ['chef-unicycle-nanometer.ngrok-free.dev'],
   },
