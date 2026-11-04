@@ -16,11 +16,11 @@ function distanceMeters(a: TrailPoint, b: TrailPoint): number {
   return R * 2 * Math.atan2(Math.sqrt(c), Math.sqrt(1 - c))
 }
 
-export function useGeolocation() {
-  const [trail, setTrail] = useState<TrailPoint[]>([])
+export function useGeolocation(initialTrail: TrailPoint[] = []) {
+  const [trail, setTrail] = useState<TrailPoint[]>(initialTrail)
   const [error, setError] = useState<string | null>(null)
   const watchIdRef = useRef<number | null>(null)
-  const lastRef = useRef<TrailPoint | null>(null)
+  const lastRef = useRef<TrailPoint | null>(initialTrail.at(-1) ?? null)
 
   const start = useCallback(() => {
     if (watchIdRef.current !== null) return
@@ -31,6 +31,7 @@ export function useGeolocation() {
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (watchIdRef.current === null) return
         setError(null)
         if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {

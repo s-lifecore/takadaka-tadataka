@@ -13,13 +13,13 @@
 
 ## 役割分担
 
-| 役割 | 担当 | 主な責務 |
-|------|------|----------|
-| PM | @s-lifecore | スコープ管理、画面遷移設計、実地テスト、発表 |
-| バックエンド | @rikut0904 | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
-| フロントA（地図・GPS） | @kouyuu0707 | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
-| フロントB（画面・描画） | @katsuki812 | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
-| AI判定 | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証 |
+| 役割                    | 担当              | 主な責務                                                                     |
+| ----------------------- | ----------------- | ---------------------------------------------------------------------------- |
+| PM                      | @s-lifecore       | スコープ管理、画面遷移設計、実地テスト、発表                                 |
+| バックエンド            | @rikut0904        | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
+| フロントA（地図・GPS）  | @kouyuu0707       | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告                     |
+| フロントB（画面・描画） | @katsuki812       | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算                          |
+| AI判定                  | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証                               |
 
 ---
 
@@ -66,18 +66,18 @@
 
 ## 技術スタック
 
-| 領域 | 技術 | 理由 |
-|------|------|------|
-| フロント | React + Vite + TypeScript + Tailwind CSS | AIコード精度高・初心者詰まりにくい |
-| 地図 | Leaflet (react-leaflet) + OpenStreetMap | 無料・APIキー不要・軌跡描画が簡単 |
-| 位置情報 | Geolocation API (watchPosition) | ブラウザ標準 |
-| 一時保存 | IndexedDB (Dexie.js) | GPS途切れ・通信不良対策 |
-| PWA | vite-plugin-pwa | 設定だけでPWA化 |
-| 認証 | Firebase Anonymous Auth | サーバー不要 |
-| DB | Firebase Firestore | リアルタイム・サーバー不要 |
-| ストレージ | Firebase Storage | 画像保存 |
-| ホスティング | Firebase Hosting | HTTPS自動 |
-| AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
+| 領域         | 技術                                     | 理由                               |
+| ------------ | ---------------------------------------- | ---------------------------------- |
+| フロント     | React + Vite + TypeScript + Tailwind CSS | AIコード精度高・初心者詰まりにくい |
+| 地図         | Leaflet (react-leaflet) + OpenStreetMap  | 無料・APIキー不要・軌跡描画が簡単  |
+| 位置情報     | Geolocation API (watchPosition)          | ブラウザ標準                       |
+| 一時保存     | IndexedDB (Dexie.js)                     | GPS途切れ・通信不良対策            |
+| PWA          | vite-plugin-pwa                          | 設定だけでPWA化                    |
+| 認証         | Firebase Anonymous Auth                  | サーバー不要                       |
+| DB           | Firebase Firestore                       | リアルタイム・サーバー不要         |
+| ストレージ   | Firebase Storage                         | 画像保存                           |
+| ホスティング | Firebase Hosting                         | HTTPS自動                          |
+| AI判定       | Gemini API (Firebase AI Logic)           | 画像入力対応・JSON構造化出力       |
 
 ---
 
@@ -87,20 +87,20 @@
 
 ```ts
 type TrailPoint = {
-  lat: number;
-  lng: number;
-  t: number; // Unix timestamp (ms)
-};
+  lat: number
+  lng: number
+  t: number // Unix timestamp (ms)
+}
 ```
 
 ### AI返り値
 
 ```ts
 type AIResult = {
-  score: number;  // 0-100 単位: [%]
+  score: number // 0-100 単位: [%]
   // guess: string;  // AIが判定した絵の内容
-  reason: string; // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
-};
+  reason: string // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
+}
 ```
 
 ### Firestore スキーマ（予定）
@@ -120,6 +120,7 @@ drawings/{drawingId}
 ## セットアップ
 
 ### 必要なもの
+
 - Node.js
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
@@ -200,3 +201,18 @@ src/
 
 - GPSは環境によって精度が大きく変わる（建物の影・地下・トンネルなど）
 - GPS 5桁（例：35.12345, 139.12345）で初期検証
+
+## ページ一覧とURL
+
+| URL           | 画面                                       |
+| ------------- | ------------------------------------------ |
+| `/`           | ホーム                                     |
+| `/map`        | 3秒カウントダウン・Firestore drawingId生成 |
+| `/map/:id`    | おさんぽ中（地図・軌跡・15分タイマー）     |
+| `/result/:id` | AI判定・結果表示・保存                     |
+
+`:id` は `drawings/{drawingId}` のIDです。「もう一度」はホームに戻ります。
+歩きスマホ警告と一時停止ではURLは変わりません。
+Firebase Anonymous Auth と Firestore の読み書き権限が必要です。
+プレイ中の軌跡は終了時に保存します。途中の再読み込みでは未保存の軌跡とタイマーは復元されません。
+Firebase Hosting の直接アクセスは `firebase.json` のリライトで対応します。
