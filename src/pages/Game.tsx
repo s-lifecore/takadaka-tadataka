@@ -5,6 +5,7 @@ import { Timer } from '../components/Timer'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { useDeviceOrientation } from '../hooks/useDeviceOrientation'
 import { useTimer } from '../hooks/useTimer'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
 import type { TrailPoint } from '../types'
 
@@ -107,6 +108,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     else resumeGPS()
   }, [isLooking, pauseGPS, resumeGPS])
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
+  const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -114,8 +116,12 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   useEffect(() => {
     startGPS()
     startTimer()
-    return () => stopGPS()
-  }, [startGPS, startTimer, stopGPS])
+    acquire()
+    return () => {
+      stopGPS()
+      release()
+    }
+  }, [startGPS, startTimer, stopGPS, acquire, release])
 
   const handleFinish = useCallback(async () => {
     if (finishing.current) return
@@ -124,6 +130,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     setSaveError(null)
     stopGPS()
     stopTimer()
+    release()
     try {
       await saveTrail(id, trail)
       navigate(`/result/${id}`)
@@ -134,7 +141,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       finishing.current = false
       setSaving(false)
     }
-  }, [id, navigate, stopGPS, stopTimer, trail])
+  }, [id, navigate, stopGPS, stopTimer, trail, release])
 
   useEffect(() => {
     if (expired) handleFinish()
@@ -155,6 +162,25 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       </div>
 
       {error && <div className="bg-red-100 text-red-700 text-sm px-4 py-2">{error}</div>}
+      {!saving && !saveError && !expired && (
+        <div className="bg-amber-50 text-amber-950 text-sm px-4 py-2" role="status">
+          {wakeLockStatus === 'active' ? (
+            <p>自動消灯の防止：有効</p>
+          ) : wakeLockStatus === 'requesting' || wakeLockStatus === 'idle' ? (
+            <p>自動消灯の防止：確認中…</p>
+          ) : (
+            <>
+              <p>{wakeLockError ?? '自動消灯の防止が解除されました。'}</p>
+              <p>省電力モードやブラウザの設定を確認してください。</p>
+              {wakeLockStatus !== 'unavailable' && (
+                <button onClick={acquire} className="mt-1 underline">
+                  自動消灯の防止を再試行
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {saveError && (
         <div role="alert" className="bg-red-100 text-red-700 text-sm px-4 py-2">
           {saveError}
