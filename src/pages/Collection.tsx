@@ -1,6 +1,4 @@
-type Props = {
-  onHome: () => void
-}
+import { useNavigate } from 'react-router-dom'
 
 function BookIcon() {
   return (
@@ -19,14 +17,12 @@ function BookIcon() {
   )
 }
 
-export function Collection({ onHome }: Props) {
+export function Collection() {
+  const navigate = useNavigate()
   return (
     <main className="collection-page">
       <div className="collection-content">
         <header className="collection-header">
-          <button type="button" onClick={onHome}>
-            <span aria-hidden="true">〈</span>もどる
-          </button>
           <h1>作品帳</h1>
           <svg
             className="collection-compass"
@@ -120,7 +116,7 @@ export function Collection({ onHome }: Props) {
 
         <p className="collection-memory">旅の思い出がここに増えていくよ</p>
         <footer className="collection-footer">
-          <button type="button" onClick={onHome}>
+          <button type="button" onClick={() => navigate('/')}>
             <svg
               width="23"
               height="23"

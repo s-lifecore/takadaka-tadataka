@@ -39,7 +39,7 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        if (isPausedRef.current) return
+        if (watchIdRef.current === null || isPausedRef.current) return
         if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {
           lat: pos.coords.latitude,
