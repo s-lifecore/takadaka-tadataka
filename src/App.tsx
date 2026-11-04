@@ -1,12 +1,11 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Rules } from './pages/Rules'
 import { Game } from './pages/Game'
 import { Home } from './pages/Home'
 import { Result } from './pages/Result'
-import { Rules } from './pages/Rules'
 
 export function App() {
   const { pathname } = useLocation()
-
   return (
     <Routes>
       <Route path="/" element={<Home />} />
