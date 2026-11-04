@@ -16,7 +16,7 @@
 | 役割 | 担当 | 主な責務 |
 |------|------|----------|
 | PM | @s-lifecore | スコープ管理、画面遷移設計、実地テスト、発表 |
-| バックエンド | @rikut0904 | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
+| バックエンド | @rikut0904 | Firebase設定、Firestore設計、セキュリティルール、Grok API呼び出し、GPSサポート |
 | フロントA（地図・GPS） | @kouyuu0707 | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
 | フロントB（画面・描画） | @katsuki812 | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
 | AI判定 | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証 |
@@ -66,7 +66,7 @@ Vite の開発サーバーは SPA のフォールバックに対応していま�
 - [x] お題の表示（固定：「りんご」）
 - [x] 15分のカウントダウンタイマー
 - [x] 軌跡を Canvas で線画に変換してPNG化
-- [x] Gemini API で「何に見えるか」を判定
+- [x] Grok API で「何に見えるか」を判定
 - [x] スコア・推測理由の表示
 - [x] 結果の Firestore 保存
 
@@ -96,7 +96,7 @@ Vite の開発サーバーは SPA のフォールバックに対応していま�
 | DB | Firebase Firestore | 結果を保存 |
 | ストレージ | Cloudinary | 画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
-| AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
+| AI判定 | Grok API（サーバー経由） | 画像入力対応・JSON構造化出力 |
 
 ---
 
@@ -172,10 +172,17 @@ VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
+<<<<<<< HEAD
 VITE_CLOUDINARY_CLOUD_NAME=...
 VITE_CLOUDINARY_UPLOAD_PRESET=...
 VITE_GEMINI_API_KEY=...
+=======
+XAI_API_KEY=...
+XAI_MODEL=grok-4-1-fast-non-reasoning
+>>>>>>> 1c7f5d5 (PRのコメントに対応)
 ```
+
+`XAI_API_KEY` はxAIで発行したAPIキーです。画像対応モデルへのアクセス権とAPIの利用残高も確認してください。秘密キーには `VITE_` を付けません。Firebase設定は認証・保存用として引き続き使用できますが、採点には不要です。
 
 ### 開発サーバー起動
 
@@ -274,6 +281,28 @@ ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで
 
 ---
 
+## 採点APIの本番運用
+
+開発・previewではViteが `/api/judge-drawing` を処理します。静的ビルドにはAPIサーバーや秘密キーは含まれません。
+
+本番用APIはNode.js 22.9以降（推奨24）で起動できます。
+
+```bash
+npm run start:api
+```
+
+環境変数は `XAI_API_KEY`、`XAI_MODEL`、必要に応じて `PORT`（既定3001）、`HOST`（既定127.0.0.1）です。本番ではデプロイ先のシークレット設定を使用してください。コンテナでは必要に応じて `HOST=0.0.0.0` にします。
+
+Firebase Hosting等から公開する場合は、APIをCloud Run等に配置し、同じオリジンの `/api/judge-drawing` をAPIへ転送してください。SPAへの書き換えよりAPI転送を優先します。静的ファイルをアップロードするだけでは採点できません。公開前にデプロイ先で認証・レート制限を設定してください。現時点のAPIは開発・チーム検証用で、利用者認証は実装していません。
+
+Grokの画像入力を使用し、採点結果は `{ score, reason }` のままです。画像は採点のためxAIに送信されます。最大3MBのPNGを受け付け、一時的な5xxと通信失敗だけ最大2回再試行します。429、認証失敗、不正な回答は再試行しません。
+
+```bash
+npm run test:ai
+```
+
+公式仕様: [画像入力](https://docs.x.ai/docs/guides/image-understanding) / [Chat Completions](https://docs.x.ai/docs/api-reference/chat-completions)。モデルの提供状況が変わった場合は `XAI_MODEL` を利用可能な画像対応モデルに変更し、開発サーバーを再起動してください。
+
 ## 注意事項
 
 - **画面OFF・バックグラウンドではGPS取得不可**（Web制約）→ 「画面を点けたまま、見ない」前提
@@ -296,7 +325,7 @@ src/
 │   └── useTimer        # 残り時間管理（フロントA）
 ├── lib/
 │   ├── firebase    # Firebase 初期化・CRUD（バックエンド）
-│   └── gemini      # Gemini API 呼び出し（AI判定）
+│   └── grok        # 採点サーバー呼び出し（AI判定）
 └── pages/
     ├── Home        # ホーム画面（フロントB）
     ├── Game        # プレイ中画面（フロントA中心）

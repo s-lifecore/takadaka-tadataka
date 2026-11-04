@@ -71,6 +71,7 @@ function AITestPage() {
     setError('')
     setResult(null)
     try {
+<<<<<<< HEAD
       const { judgeDrawing } = await import('./lib/gemini')
       const value = await judgeDrawing({ theme: theme.trim(), imageBase64: image })
       setResult(value)
@@ -78,6 +79,12 @@ function AITestPage() {
         ...previous,
         { ...value, file: filename, theme: theme.trim(), time: new Date().toISOString() },
       ])
+=======
+      const { judgeDrawing } = await import("./lib/grok");
+      const value = await judgeDrawing(image, theme.trim());
+      setResult(value);
+      setRecords(previous => [...previous, { ...value, file: filename, theme: theme.trim(), time: new Date().toISOString() }]);
+>>>>>>> 1c7f5d5 (PRのコメントに対応)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI判定に失敗しました')
     } finally {
@@ -96,6 +103,7 @@ function AITestPage() {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
+<<<<<<< HEAD
   return (
     <main>
       <h1>GPSお絵かき AI判定テスト</h1>
@@ -199,6 +207,33 @@ function AITestPage() {
       </section>
     </main>
   )
+=======
+  return <main>
+    <h1>GPSお絵かき AI判定テスト</h1>
+    <p>地図上に描いた絵をAIで採点します。</p>
+    <label>お題<input value={theme} disabled={loading} onChange={e => { setTheme(e.target.value); setResult(null); }} /></label>
+    <label>PNG画像（3MB以下）<input type="file" accept="image/png" disabled={loading} onChange={e => void handleFile(e.target.files?.[0])} /></label>
+    <p>白背景・黒線・512×512pxを推奨します。画像の再選択で記録はリセットされます。</p>
+    {reading && <p role="status">画像を読み込み中…</p>}
+    {image && <figure><img src={image} alt="採点する線画" /><figcaption>{filename}</figcaption></figure>}
+    <button onClick={() => void handleJudge()} disabled={loading || reading || !image || !theme.trim()}>{loading ? "AI判定中…" : "AIで採点する"}</button>
+    <p>採点にはAPIの利用枠を消費します。通信失敗・一時的な混雑時は最大2回再試行します。</p>
+    {error && <p role="alert" className="error">エラー：{error}</p>}
+    <section aria-live="polite" aria-busy={loading}>
+      {result && <><h2>採点結果：{result.score}%</h2><progress aria-label="得点" value={result.score} max={100} /><h3>AIからのコメント</h3><p>{result.reason}</p></>}
+    </section>
+    <section>
+      <h2>採点ブレの検証</h2>
+      <p>同じ画像・お題を5回採点してください。直近5回を集計します。</p>
+      <p>実行回数：{scores.length}/5　平均：{scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : "—"}%　最大差：{scores.length ? spread : "—"}%</p>
+      {scores.length === 5 && <p>{spread <= 10 ? "仮目標の最大差10点以内を達成しています。" : "最大差が10点を超えています。プロンプトを見直してください。"}</p>}
+      <p>この目標は再現性を保証するものではありません。記録はページを閉じると消えます。</p>
+      <button disabled={!records.length} onClick={downloadRecords}>記録をJSONで保存</button>{" "}
+      <button disabled={loading || !records.length} onClick={() => setRecords([])}>記録をクリア</button>
+      {records.length > 0 && <div className="table-wrap"><table><thead><tr><th>回</th><th>お題</th><th>得点</th><th>理由</th></tr></thead><tbody>{records.map((r, i) => <tr key={i}><td>{i + 1}</td><td>{r.theme}</td><td>{r.score}%</td><td>{r.reason}</td></tr>)}</tbody></table></div>}
+    </section>
+  </main>;
+>>>>>>> 1c7f5d5 (PRのコメントに対応)
 }
 
 createRoot(document.getElementById('root')!).render(<AITestPage />)

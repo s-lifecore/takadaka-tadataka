@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/lib/aiPrompt.ts
 
 export function createScoringPrompt(theme: string): string {
@@ -77,3 +78,6 @@ ${theme}
 JSON以外の文章は出力しない。
 `
 }
+=======
+export { createScoringPrompt } from "../../server/ai-prompt.mjs";
+>>>>>>> 1c7f5d5 (PRのコメントに対応)

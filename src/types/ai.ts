@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/types/ai.ts
 
 // AIの採点結果
@@ -11,3 +12,13 @@ export type AIInput = {
   theme: string
   imageBase64: string
 }
+=======
+// src/types/ai.ts
+
+// AIの採点結果
+export type AIResult = {
+  score: number;  // 0～100の一致度（%）
+  reason: string; // AIの採点理由
+};
+
+>>>>>>> 1c7f5d5 (PRのコメントに対応)

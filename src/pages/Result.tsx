@@ -5,9 +5,13 @@ import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { TrailCanvas } from '../components/TrailCanvas'
+<<<<<<< HEAD
 import { saveDrawing, signInAnon } from '../lib/firebase'
 import { judgeDrawing } from '../lib/gemini'
 import { loadTrail } from '../lib/drawings'
+=======
+import { judgeDrawing } from '../lib/grok'
+>>>>>>> 1c7f5d5 (PRのコメントに対応)
 import type { AIResult, TrailPoint } from '../types'
 
 export function Result() {
@@ -60,11 +64,16 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
     if (started.current) return
     started.current = true
     setJudging(true)
+<<<<<<< HEAD
     setSaved(false)
     setError(null)
     const theme = 'りんご'
+=======
+    setError(null)
+    setResult(null)
+>>>>>>> 1c7f5d5 (PRのコメントに対応)
     try {
-      const res = await judgeDrawing({ imageBase64: base64, theme: 'りんご' })
+      const res = await judgeDrawing(base64, 'りんご')
       setResult(res)
       setJudging(false)
       setSaving(true)
@@ -117,7 +126,7 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
         <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
           <div className="text-center">
             <span className="text-6xl font-bold">{result.score}</span>
-            <span className="text-2xl text-gray-400">/100</span>
+            <span className="text-2xl text-gray-400">%</span>
           </div>
           <p className="text-sm text-gray-500">{result.reason}</p>
         </div>
