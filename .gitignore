@@ -3,4 +3,4 @@ dist
 .env.local
 .env.*.local
 
-*.js
+.firebase

@@ -1,21 +1,9 @@
-import { useEffect, useState } from 'react'
-
 type Props = {
   onCancel: () => void
-  onStart: () => void
+  count: number
 }
 
-export function Ready({ onCancel, onStart }: Props) {
-  const [count, setCount] = useState(3)
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (count === 1) onStart()
-      else setCount(count - 1)
-    }, 1000)
-    return () => window.clearTimeout(timer)
-  }, [count, onStart])
-
+export function Ready({ onCancel, count }: Props) {
   return (
     <main className="ready-page">
       <header className="ready-header">
@@ -38,7 +26,7 @@ export function Ready({ onCancel, onStart }: Props) {
         aria-live="polite"
         aria-atomic="true"
       >
-        <strong>{count}</strong>
+        <strong>{count || '準備中…'}</strong>
         <p>秒後に記録がスタート！</p>
       </section>
 

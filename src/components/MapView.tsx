@@ -15,7 +15,7 @@ function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
 
 export function MapView({ trail }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = trail[trail.length - 1] ?? { lat: 36.5748, lng: 136.5975 } // 金沢大学
+  const center = trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
 
   return (
     <MapContainer
@@ -28,9 +28,7 @@ export function MapView({ trail }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
-      {positions.length > 1 && (
-        <Polyline positions={positions} color="black" weight={4} />
-      )}
+      {positions.length > 1 && <Polyline positions={positions} color="black" weight={4} />}
       <CenterOnTrail trail={trail} />
     </MapContainer>
   )
