@@ -88,11 +88,7 @@ function LoadGame({ id }: { id: string }) {
   return <PlayingGame id={id} initialTrail={trail} />
 }
 
-function WalkingIcon({
-  name,
-}: {
-  name: 'compass' | 'clock' | 'location' | 'pause' | 'play' | 'flag'
-}) {
+function WalkingIcon({ name }: { name: 'compass' | 'clock' | 'pause' | 'play' | 'flag' }) {
   return (
     <svg
       width="20"
@@ -117,12 +113,6 @@ function WalkingIcon({
           <path d="M12 6v6l4 2" />
         </>
       )}
-      {name === 'location' && (
-        <>
-          <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" />
-          <circle cx="12" cy="10" r="2.5" />
-        </>
-      )}
       {name === 'pause' && (
         <>
           <rect x="5" y="4" width="4" height="16" rx="1" />
@@ -140,7 +130,6 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const [paused, setPaused] = useState(false)
   const {
     trail,
-    error,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
@@ -204,16 +193,6 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     setPaused((value) => !value)
   }
 
-  const recording = !paused && !isLooking && !error && trail.length > 0
-  const status =
-    paused || isLooking
-      ? '記録を一時停止中'
-      : error
-        ? '位置情報を取得できません'
-        : recording
-          ? '位置情報を記録中'
-          : '位置情報を取得中'
-
   return (
     <main className="walking-page">
       <div className="walking-content">
@@ -262,19 +241,6 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             </div>
           )}
         </section>
-        <div className={`walking-status${error ? ' walking-status-error' : ''}`} role="status">
-          <WalkingIcon name="location" />
-          <span>{status}</span>
-          <strong>
-            <i className={recording ? 'is-recording' : ''} />
-            {recording ? 'ON' : paused || isLooking || error ? 'OFF' : '取得中'}
-          </strong>
-        </div>
-        {error && (
-          <p className="walking-error" role="alert">
-            {error}。端末の位置情報の設定を確認し、一時停止後に再開してください。
-          </p>
-        )}
         {saveError && (
           <p className="walking-error" role="alert">
             {saveError}

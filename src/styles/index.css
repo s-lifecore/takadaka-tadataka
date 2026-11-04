@@ -21,7 +21,7 @@ body,
 .walking-content {
   display: flex;
   flex-direction: column;
-  max-width: 460px;
+  max-width: 760px;
   min-height: calc(100svh - 48px);
   margin: 0 auto;
 }
@@ -31,7 +31,7 @@ body,
   align-items: center;
   justify-content: center;
   min-height: 24px;
-  margin-bottom: 29px;
+  margin-bottom: 18px;
 }
 .walking-header h1 {
   margin: 0;
@@ -79,9 +79,8 @@ body,
 }
 .walking-map {
   position: relative;
-  flex: 1;
-  min-height: 300px;
-  height: 53svh;
+  flex: 1 0 65svh;
+  min-height: 360px;
   overflow: hidden;
   isolation: isolate;
   border: 1.5px solid #b5c4a8;
@@ -110,48 +109,8 @@ body,
   font-weight: 700;
   pointer-events: none;
 }
-.walking-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 49px;
-  margin-top: 14px;
-  padding: 10px 13px;
-  border: 1.5px solid #cfad87;
-  border-radius: 15px;
-  background: #fffaf0;
-  font-size: 12px;
-}
-.walking-status > svg {
-  flex-shrink: 0;
-  color: #926e4e;
-}
-.walking-status strong {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  color: #8a7d6d;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.walking-status i {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #a79b88;
-}
-.walking-status strong:has(.is-recording) {
-  color: #58866d;
-}
-.walking-status i.is-recording {
-  background: #58866d;
-}
-.walking-status-error,
 .walking-error {
   color: #a3462f;
-}
-.walking-error {
   margin: 8px 5px 0;
   font-size: 12px;
   line-height: 1.6;

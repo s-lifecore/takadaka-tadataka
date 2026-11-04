@@ -39,10 +39,10 @@ export function Result() {
       </div>
     )
   if (!trail) return <p className="p-6">作品を読み込み中…</p>
-  return <DrawingResult trail={trail} />
+  return <DrawingResult key={id} trail={trail} id={id!} />
 }
 
-function DrawingResult({ trail }: { trail: TrailPoint[] }) {
+function DrawingResult({ trail, id }: { trail: TrailPoint[]; id: string }) {
   const navigate = useNavigate()
   const started = useRef(false)
   const [result, setResult] = useState<AIResult | null>(null)
@@ -53,32 +53,35 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
   const [error, setError] = useState<string | null>(null)
   const processedImage = useRef<string | null>(null)
 
-  const handleCanvasReady = useCallback(async (base64: string) => {
-    if (processedImage.current === base64) return
-    processedImage.current = base64
+  const handleCanvasReady = useCallback(
+    async (base64: string) => {
+      if (processedImage.current === base64) return
+      processedImage.current = base64
 
-    if (started.current) return
-    started.current = true
-    setJudging(true)
-    setSaved(false)
-    setError(null)
-    const theme = 'りんご'
-    try {
-      const res = await judgeDrawing(base64, theme)
-      setResult(res)
-      setJudging(false)
-      setSaving(true)
-      const user = await signInAnon()
-      const savedDrawing = await saveDrawing(user.uid, theme, base64, res)
-      setImagePublicId(savedDrawing.imagePublicId)
-      setSaved(true)
-    } catch (e: unknown) {
-      setError(String(e))
-    } finally {
-      setJudging(false)
-      setSaving(false)
-    }
-  }, [])
+      if (started.current) return
+      started.current = true
+      setJudging(true)
+      setSaved(false)
+      setError(null)
+      const theme = 'りんご'
+      try {
+        const res = await judgeDrawing(base64, theme)
+        setResult(res)
+        setJudging(false)
+        setSaving(true)
+        const user = await signInAnon()
+        const savedDrawing = await saveDrawing(user.uid, theme, base64, res, id)
+        setImagePublicId(savedDrawing.imagePublicId)
+        setSaved(true)
+      } catch (e: unknown) {
+        setError(String(e))
+      } finally {
+        setJudging(false)
+        setSaving(false)
+      }
+    },
+    [id],
+  )
 
   const cloudinary = new Cloudinary({
     cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
@@ -119,9 +122,6 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
             <span className="text-6xl font-bold">{result.score}</span>
             <span className="text-2xl text-gray-400">/100</span>
           </div>
-          <p className="text-center text-gray-700">
-            AIの答え：<strong>{result.guess}</strong>
-          </p>
           <p className="text-center text-gray-700">
             AIの答え：<strong>{result.guess}</strong>
           </p>
