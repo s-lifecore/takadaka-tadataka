@@ -72,10 +72,6 @@ function Illustration() {
 
 export function Home() {
   const navigate = useNavigate()
-  return (
-    <div className="flex flex-col items-center justify-center h-screen gap-8 p-6 bg-white">
-      <h1 className="text-3xl font-bold">高々忠敬</h1>
-      <p className="text-center text-gray-600">歩いて絵を描こう</p>
   const [panel, setPanel] = useState<'works' | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
@@ -160,18 +156,6 @@ export function Home() {
         onClose={() => setPanel(null)}
         onClick={handleDialogClick}
       >
-<<<<<<< HEAD
-        ひとりで遊ぶ
-      </button>
-      <button
-        type="button"
-        onClick={() => navigate('/rules')}
-        className="w-full max-w-sm py-4 border border-[#c89f76] bg-[#fffaf0] text-[#604733] text-lg font-semibold rounded-2xl"
-      >
-        あそびかた
-      </button>
-    </div>
-=======
         <h2 id="home-dialog-title">作品帳</h2>
         <p>保存した作品を一覧で見る画面は準備中です。</p>
         <button autoFocus onClick={() => setPanel(null)}>
@@ -179,6 +163,5 @@ export function Home() {
         </button>
       </dialog>
     </main>
->>>>>>> origin/ui/judgement
   )
 }

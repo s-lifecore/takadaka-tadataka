@@ -111,32 +111,6 @@ function DrawingResult({
       }
     },
     [id, theme, result],
-      if (processedImage.current === base64) return
-      processedImage.current = base64
-
-      if (started.current) return
-      started.current = true
-      setJudging(true)
-      setSaved(false)
-      setError(null)
-      const theme = 'りんご'
-      try {
-        const res = await judgeDrawing(base64, theme)
-        setResult(res)
-        setJudging(false)
-        setSaving(true)
-        const user = await signInAnon()
-        const savedDrawing = await saveDrawing(user.uid, theme, base64, res, id)
-        setImagePublicId(savedDrawing.imagePublicId)
-        setSaved(true)
-      } catch (e: unknown) {
-        setError(String(e))
-      } finally {
-        setJudging(false)
-        setSaving(false)
-      }
-    },
-    [id],
   )
 
   const cloudinary = new Cloudinary({
