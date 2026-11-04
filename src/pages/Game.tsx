@@ -160,7 +160,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
           {saveError}
         </div>
       )}
-      
+
       {(status === 'permission-required' || status === 'denied' || status === 'error') && (
         <div className="bg-amber-100 text-amber-900 text-sm px-4 py-2" role="status">
           <p>

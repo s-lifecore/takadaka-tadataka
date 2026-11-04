@@ -2,7 +2,6 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Game } from './pages/Game'
 import { Home } from './pages/Home'
 import { Result } from './pages/Result'
-=======
 import { Rules } from './pages/Rules'
 
 export function App() {
