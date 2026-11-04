@@ -24,6 +24,13 @@ export function Home() {
       >
         ひとりで遊ぶ
       </button>
+      <button
+        type="button"
+        onClick={() => navigate('/rules')}
+        className="w-full max-w-sm py-4 border border-[#c89f76] bg-[#fffaf0] text-[#604733] text-lg font-semibold rounded-2xl"
+      >
+        あそびかた
+      </button>
     </div>
   )
 }
