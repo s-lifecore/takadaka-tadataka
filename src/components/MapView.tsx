@@ -1,4 +1,4 @@
-import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet'
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { TrailPoint } from '../types'
 
@@ -35,12 +35,16 @@ export function MapView({ trail }: Props) {
             center={positions[0]}
             radius={7}
             pathOptions={{ color: '#d57c43', fillColor: '#fffaf0', fillOpacity: 1, weight: 3 }}
-          />
+          >
+            <Tooltip>開始地点</Tooltip>
+          </CircleMarker>
           <CircleMarker
             center={positions[positions.length - 1]}
             radius={7}
-            pathOptions={{ color: '#d57c43', fillColor: '#fffaf0', fillOpacity: 1, weight: 3 }}
-          />
+            pathOptions={{ color: '#d57c43', fillColor: '#d57c43', fillOpacity: 1, weight: 3 }}
+          >
+            <Tooltip>現在地・終了地点</Tooltip>
+          </CircleMarker>
         </>
       )}
       <CenterOnTrail trail={trail} />

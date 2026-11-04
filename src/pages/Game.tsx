@@ -130,6 +130,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const [paused, setPaused] = useState(false)
   const {
     trail,
+    error: gpsError,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
@@ -180,7 +181,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     if (expired) void handleFinish()
   }, [expired, handleFinish])
 
-  function togglePause() {
+  const togglePause = useCallback(() => {
     if (paused) {
       if (!isLooking) resumeGPS()
       startGPS()
@@ -191,7 +192,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       stopTimer()
     }
     setPaused((value) => !value)
-  }
+  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer])
 
   return (
     <main className="walking-page">
@@ -237,10 +238,23 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
           {paused && !isLooking && <div className="walking-paused">一時停止中</div>}
           {isLooking && (
             <div className="walking-warning" role="alert">
-              前を向いて歩いてください。端末を傾けると記録が再開します。
+              <div>
+                <p>前を向いて歩いてください。</p>
+                <p>軌跡の記録を一時停止しています。</p>
+                <p>
+                  {paused
+                    ? '端末を傾けてから「再開する」を押してください。'
+                    : '端末を傾けると記録が再開します。'}
+                </p>
+              </div>
             </div>
           )}
         </section>
+        {gpsError && (
+          <p className="walking-error" role="alert">
+            位置情報を取得できません：{gpsError}
+          </p>
+        )}
         {saveError && (
           <p className="walking-error" role="alert">
             {saveError}

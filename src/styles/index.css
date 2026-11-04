@@ -16,7 +16,6 @@ body,
   padding: max(30px, env(safe-area-inset-top)) 9px max(18px, env(safe-area-inset-bottom));
   background: #f6efe4;
   color: #6b513b;
-  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
 }
 .walking-content {
   display: flex;

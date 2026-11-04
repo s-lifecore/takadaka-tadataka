@@ -1,4 +1,5 @@
-import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import dayjs from 'dayjs'
 import { auth, db, signInAnon } from './firebase'
 import type { TrailPoint } from '../types'
 
@@ -22,7 +23,7 @@ export async function createDrawing() {
     uid: user.uid,
     theme: 'りんご',
     trail: [],
-    createdAt: serverTimestamp(),
+    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
   })
   return drawing.id
 }
