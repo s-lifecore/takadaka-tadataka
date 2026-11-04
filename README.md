@@ -165,6 +165,33 @@ npm run dev
 
 > スマホ実機で確認する場合：`npm run dev -- --host` でLANのIPにアクセス（HTTPSが必要なAPIは `localhost` のみ動作）
 
+### ngrok経由でスマホ実機から確認
+
+ngrokをインストールし、認証トークンを設定しておきます。
+
+1. ngrokで割り当てられたホスト名を `.env.local` に追加します（`https://` や末尾の `/` は不要）。
+
+   ```env
+   NGROK_HOST=your-domain.ngrok-free.app
+   ```
+
+2. 開発サーバーを起動します。設定を変更した場合は再起動してください。
+
+   ```bash
+   npm run dev
+   ```
+
+3. 別のターミナルで同じホスト名のトンネルを起動します。
+
+   ```bash
+   ngrok http --url=https://your-domain.ngrok-free.app 5173
+   ```
+
+4. スマホでngrokのHTTPS URLを開き、位置情報や傾きセンサーの利用を許可します。
+
+開発サーバーはポート5173を使用します。使用中の場合はエラーになるため、先にそのポートを空けてください。
+`NGROK_HOST` は開発サーバーの許可ホスト設定にのみ使用し、クライアントには公開しません。
+
 ---
 
 ## 注意事項
