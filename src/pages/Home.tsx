@@ -3,56 +3,18 @@ import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function Icon({ kind }: { kind: 'compass' | 'gear' | 'steps' | 'people' | 'book' | 'guide' }) {
-  const paths = {
-    compass: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="m15 5-2 9-4 5 2-9Z" />
-      </>
-    ),
-    gear: (
-      <>
-        <path d="m9 3 1-1h4l1 3 3 1 3 3-1 3 1 3-3 3-3 1-1 3h-4l-1-3-3-1-3-3 1-3-1-3 3-3Z" />
-        <circle cx="12" cy="12" r="3" />
-      </>
-    ),
-    steps: (
-      <>
-        <ellipse cx="7" cy="17" rx="3" ry="4" transform="rotate(25 7 17)" />
-        <ellipse cx="18" cy="10" rx="3" ry="4" transform="rotate(-25 18 10)" />
-        <path d="m3 8 .1 0M6 5h.1M10 4h.1M15 2h.1M19 3h.1M22 5h.1" strokeWidth="3" />
-      </>
-    ),
-    people: (
-      <>
-        <circle cx="9" cy="7" r="3" />
-        <path d="M2 21v-5a7 7 0 0 1 14 0v5M18 4a3 3 0 0 1 0 6m1 3c3 0 4 3 4 5v3" />
-      </>
-    ),
-    book: (
-      <>
-        <rect x="5" y="2" width="15" height="20" rx="2" />
-        <path d="M2 6h5M2 11h5M2 16h5M10 7h6M10 12h6" />
-      </>
-    ),
-    guide: (
-      <>
-        <path d="m12 5-10-3v17l10 3 10-3V2Zm0 0v17M6 7l3 1m-3 4 3 1m7-5 3-1m-3 6 3-1" />
-      </>
-    ),
+  const names = {
+    compass: 'explore',
+    gear: 'settings',
+    steps: 'directions_walk',
+    people: 'people',
+    book: 'collections_bookmark',
+    guide: 'menu_book',
   }
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {paths[kind]}
-    </svg>
+    <span className="material-icons home-icon" aria-hidden="true">
+      {names[kind]}
+    </span>
   )
 }
 
@@ -160,7 +122,9 @@ export function Home() {
             <strong>ひとりで遊ぶ</strong>
             <small>お題を歩いて描こう！</small>
           </span>
-          <span className="home-chevron">›</span>
+          <span className="home-action-icon">
+            <Icon kind="steps" />
+          </span>
         </button>
         <button className="home-multi" disabled>
           <Icon kind="people" />
@@ -184,7 +148,9 @@ export function Home() {
         </button>
       </div>
       <footer className="home-footer">
-        <span>⟶›</span>歩いて、描いて、AIに見せよう！<span>‹⟵</span>
+        <Icon kind="steps" />
+        <span>歩いて、描いて、AIに見せよう！</span>
+        <Icon kind="steps" />
       </footer>
       <dialog
         ref={dialogRef}
@@ -194,7 +160,7 @@ export function Home() {
         onClose={() => setPanel(null)}
         onClick={handleDialogClick}
       >
-        <h2 id="home-dialog-title">{panel === 'works' ? '作品帳' : '設定'}</h2> (
+        <h2 id="home-dialog-title">{panel === 'works' ? '作品帳' : '設定'}</h2>
         <p>
           {panel === 'works'
             ? '保存した作品を一覧で見る画面は準備中です。'
