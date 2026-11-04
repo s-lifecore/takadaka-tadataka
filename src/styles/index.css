@@ -73,20 +73,51 @@ body,
   line-height: 22px;
   font-weight: 700;
 }
-.judgement-progress {
-  height: 11px;
-  overflow: hidden;
-  margin: 32px 21px 0;
-  border-radius: 20px;
-  background: #dfd2bd;
+.judgement-walk {
+  max-width: 320px;
+  margin: 22px auto 0;
+  color: #a36034;
 }
-.judgement-progress span {
+.judgement-walk > svg {
   display: block;
-  width: 62%;
-  height: 100%;
-  border-radius: inherit;
-  background: #df894e;
-  animation: judgement-loading 2s ease-in-out infinite alternate;
+  width: 100%;
+  overflow: visible;
+}
+.judgement-walk-guide,
+.judgement-walk-trail {
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.judgement-walk-guide {
+  stroke: #dfd2bd;
+  stroke-dasharray: 3 7;
+}
+.judgement-walk-trail {
+  stroke: #df894e;
+  stroke-dasharray: 1;
+  animation: judgement-draw 3s linear infinite;
+}
+.judgement-walker {
+  offset-path: path('M20 58 Q90 18 160 58 T300 58');
+  offset-rotate: 0deg;
+  animation: judgement-stroll 3s linear infinite;
+}
+.judgement-walker path {
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.judgement-arm {
+  transform-origin: 16px 18px;
+  animation: judgement-step 0.6s ease-in-out infinite alternate;
+}
+.judgement-leg {
+  transform-origin: 16px 29px;
+  animation: judgement-step 0.6s ease-in-out infinite alternate;
+}
+.judgement-arm-back,
+.judgement-leg-back {
+  animation-delay: -0.6s;
 }
 .judgement-caption {
   margin: 33px 0 0;
@@ -113,17 +144,39 @@ body,
   font-size: 10px;
   line-height: 16px;
 }
-@keyframes judgement-loading {
+@keyframes judgement-stroll {
   from {
-    transform: translateX(-35%);
+    offset-distance: 0%;
   }
   to {
-    transform: translateX(95%);
+    offset-distance: 100%;
+  }
+}
+@keyframes judgement-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes judgement-step {
+  from {
+    transform: rotate(-25deg);
+  }
+  to {
+    transform: rotate(25deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .judgement-progress span {
+  .judgement-walker,
+  .judgement-arm,
+  .judgement-leg,
+  .judgement-walk-trail {
     animation: none;
+  }
+  .judgement-walker {
+    offset-distance: 50%;
   }
 }
 @media (max-height: 700px) {
