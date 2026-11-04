@@ -1,7 +1,7 @@
 import { FirebaseError, getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { doc, getDoc, getFirestore, Timestamp, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -62,13 +62,10 @@ export async function saveDrawing(
     throw new Error('作品が見つかりません。ホームからゲームを開始し直してください。')
   const drawing = snapshot.data()
   if (drawing.uid !== uid) throw new Error('この作品には保存できません。')
-  // 開始時刻を保持し、旧データのTimestampはスキーマのJST文字列に揃える。
-  const createdAt =
-    typeof drawing.createdAt === 'string' && drawing.createdAt
-      ? drawing.createdAt
-      : dayjs(drawing.createdAt instanceof Timestamp ? drawing.createdAt.toDate() : undefined)
-          .tz('Asia/Tokyo')
-          .format('YYYY-MM-DDTHH:mm:ssZ')
+  // 開始時刻を保持し、dayjsでJSTの文字列に統一する。未設定の場合は現在時刻を使う。
+  const createdAt = dayjs(drawing.createdAt || undefined)
+    .tz('Asia/Tokyo')
+    .format('YYYY-MM-DDTHH:mm:ssZ')
   const image = await uploadDrawingImage(imageBase64)
 
   try {
