@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AdvancedImage } from '@cloudinary/react'
+import { Cloudinary } from '@cloudinary/url-gen'
+import { auto } from '@cloudinary/url-gen/actions/resize'
+import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { TrailCanvas } from '../components/TrailCanvas'
+import { saveDrawing, signInAnon } from '../lib/firebase'
 import { judgeDrawing } from '../lib/gemini'
 import { loadTrail } from '../lib/drawings'
 import type { AIResult, TrailPoint } from '../types'
@@ -42,21 +47,49 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
   const started = useRef(false)
   const [result, setResult] = useState<AIResult | null>(null)
   const [judging, setJudging] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [imagePublicId, setImagePublicId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const processedImage = useRef<string | null>(null)
 
   const handleCanvasReady = useCallback(async (base64: string) => {
+    if (processedImage.current === base64) return
+    processedImage.current = base64
+
     if (started.current) return
     started.current = true
     setJudging(true)
+    setSaved(false)
+    setError(null)
+    const theme = 'りんご'
     try {
-      const res = await judgeDrawing(base64, 'りんご')
+      const res = await judgeDrawing(base64, theme)
       setResult(res)
-    } catch (e) {
+      setJudging(false)
+      setSaving(true)
+      const user = await signInAnon()
+      const savedDrawing = await saveDrawing(user.uid, theme, base64, res)
+      setImagePublicId(savedDrawing.imagePublicId)
+      setSaved(true)
+    } catch (e: unknown) {
       setError(String(e))
     } finally {
       setJudging(false)
+      setSaving(false)
     }
   }, [])
+
+  const cloudinary = new Cloudinary({
+    cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
+  })
+  const image = imagePublicId
+    ? cloudinary
+        .image(imagePublicId)
+        .format('auto')
+        .quality('auto')
+        .resize(auto().gravity(autoGravity()).width(500).height(500))
+    : null
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-white p-6 gap-6">
@@ -69,6 +102,14 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
       </div>
 
       {judging && <p className="text-gray-500">AI が判定中...</p>}
+      {saving && <p className="text-gray-500">結果を保存中...</p>}
+      {saved && <p className="text-green-600">保存しました</p>}
+
+      {image && (
+        <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
+          <AdvancedImage cldImg={image} />
+        </div>
+      )}
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
