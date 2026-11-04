@@ -1,8 +1,6 @@
 // src/lib/aiPrompt.ts
 
-export function createScoringPrompt(
-  theme: string
-): string {
+export function createScoringPrompt(theme: string): string {
   return `
 あなたは「歩いてお絵かきゲーム」の
 公平なAI採点者です。
@@ -77,5 +75,5 @@ ${theme}
 }
 
 JSON以外の文章は出力しない。
-`;
+`
 }

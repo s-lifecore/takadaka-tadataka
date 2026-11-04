@@ -28,9 +28,7 @@ export function MapView({ trail }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
-      {positions.length > 1 && (
-        <Polyline positions={positions} color="black" weight={4} />
-      )}
+      {positions.length > 1 && <Polyline positions={positions} color="black" weight={4} />}
       <CenterOnTrail trail={trail} />
     </MapContainer>
   )

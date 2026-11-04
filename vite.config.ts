@@ -6,10 +6,16 @@ export default defineConfig(({ mode }) => {
   const { NGROK_HOST } = loadEnv(mode, '.', 'NGROK_')
 
   return {
+    resolve: {
+      extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
+    },
     server: {
       port: 5173,
       strictPort: true,
-      allowedHosts: NGROK_HOST ? [NGROK_HOST.trim()] : [],
+      allowedHosts: [
+        'chef-unicycle-nanometer.ngrok-free.dev',
+        ...(NGROK_HOST?.trim() ? [NGROK_HOST.trim()] : []),
+      ],
     },
     build: {
       rollupOptions: {
