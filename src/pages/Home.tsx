@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-function Icon({ kind }: { kind: 'compass' | 'gear' | 'steps' | 'people' | 'book' | 'guide' }) {
+function Icon({ kind }: { kind: 'compass' | 'steps' | 'people' | 'book' | 'guide' }) {
   const names = {
     compass: 'explore',
-    gear: 'settings',
     steps: 'directions_walk',
     people: 'people',
     book: 'collections_bookmark',
@@ -73,7 +72,7 @@ function Illustration() {
 
 export function Home() {
   const navigate = useNavigate()
-  const [panel, setPanel] = useState<'works' | 'settings' | null>(null)
+  const [panel, setPanel] = useState<'works' | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -101,9 +100,6 @@ export function Home() {
           <Icon kind="compass" />
           旅のスケッチブック
         </span>
-        <button className="home-settings" aria-label="設定" onClick={() => setPanel('settings')}>
-          <Icon kind="gear" />
-        </button>
       </header>
       <div className="home-title">
         <h1>高々忠敬</h1>
@@ -160,12 +156,8 @@ export function Home() {
         onClose={() => setPanel(null)}
         onClick={handleDialogClick}
       >
-        <h2 id="home-dialog-title">{panel === 'works' ? '作品帳' : '設定'}</h2>
-        <p>
-          {panel === 'works'
-            ? '保存した作品を一覧で見る画面は準備中です。'
-            : '位置情報の利用許可は、ブラウザの設定から変更できます。'}
-        </p>
+        <h2 id="home-dialog-title">作品帳</h2>
+        <p>保存した作品を一覧で見る画面は準備中です。</p>
         <button autoFocus onClick={() => setPanel(null)}>
           閉じる
         </button>

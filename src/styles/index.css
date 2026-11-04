@@ -38,16 +38,6 @@ body,
   width: 24px;
   height: 24px;
 }
-.home-settings {
-  padding: 9px;
-  border: 1px solid #caa479;
-  border-radius: 14px;
-  background: #fffaf0;
-}
-.home-settings .home-icon {
-  width: 24px;
-  height: 24px;
-}
 .home-title {
   text-align: center;
   margin: 17px 0 15px;
