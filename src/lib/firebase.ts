@@ -1,7 +1,7 @@
 import { FirebaseError, getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, getFirestore, setDoc } from 'firebase/firestore'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -69,13 +69,17 @@ export async function saveDrawing(
   const image = await uploadDrawingImage(imageBase64)
 
   try {
-    await updateDoc(drawingRef, {
-      uid,
-      theme,
-      imagePublicId: image.publicId,
-      result,
-      createdAt,
-    })
+    await setDoc(
+      drawingRef,
+      {
+        uid,
+        theme,
+        imagePublicId: image.publicId,
+        result,
+        createdAt,
+      },
+      { merge: true },
+    )
   } catch (error) {
     if (error instanceof FirebaseError && error.code === 'not-found')
       throw new Error('作品が見つかりません。ホームからゲームを開始し直してください。')
