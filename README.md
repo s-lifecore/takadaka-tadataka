@@ -126,7 +126,7 @@ type TrailPoint = {
 ```ts
 type AIResult = {
   score: number;  // 0-100 単位: [%]
-  // guess: string;  // AIが判定した絵の内容
+  guess: string;  // AIが判定した絵の内容
   reason: string; // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
 };
 ```

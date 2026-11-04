@@ -1,4 +1,4 @@
-import { MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet'
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { TrailPoint } from '../types'
 
@@ -31,7 +31,25 @@ export function MapView({ trail }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
-      {positions.length > 1 && <Polyline positions={positions} color="black" weight={4} />}
+      {positions.length > 1 && <Polyline positions={positions} color="#d57c43" weight={5} />}
+      {positions.length > 0 && (
+        <>
+          <CircleMarker
+            center={positions[0]}
+            radius={7}
+            pathOptions={{ color: '#d57c43', fillColor: '#fffaf0', fillOpacity: 1, weight: 3 }}
+          >
+            <Tooltip>開始地点</Tooltip>
+          </CircleMarker>
+          <CircleMarker
+            center={positions[positions.length - 1]}
+            radius={7}
+            pathOptions={{ color: '#d57c43', fillColor: '#d57c43', fillOpacity: 1, weight: 3 }}
+          >
+            <Tooltip>現在地・終了地点</Tooltip>
+          </CircleMarker>
+        </>
+      )}
       <CenterOnTrail trail={trail} />
     </MapContainer>
   )
