@@ -40,10 +40,10 @@ function LoadResult({ id }: { id: string }) {
   }, [id])
   if (error)
     return (
-      <main className="p-6">
+      <div className="p-6">
         <p role="alert">{error}</p>
         <Link to="/">ホームへ戻る</Link>
-      </main>
+      </div>
     )
   if (!drawing)
     return (
