@@ -1,14 +1,14 @@
 import { useEffect } from 'react'
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { TrailPoint } from '../types'
+import type { Position, TrailPoint } from '../types'
 
 type Props = {
   trail: TrailPoint[]
-  currentPosition?: TrailPoint | null
+  currentPosition?: Position | null
 }
 
-function CenterOnPosition({ lat, lng }: { lat: number; lng: number }) {
+function CenterOnPosition({ lat, lng }: Position) {
   const map = useMap()
   useEffect(() => {
     map.panTo([lat, lng])
@@ -18,7 +18,8 @@ function CenterOnPosition({ lat, lng }: { lat: number; lng: number }) {
 
 export function MapView({ trail, currentPosition }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = currentPosition ?? trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
+  const center: Position = currentPosition ??
+    trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
 
   return (
     <MapContainer
