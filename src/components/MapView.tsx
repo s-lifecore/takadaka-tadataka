@@ -6,6 +6,9 @@ type Props = {
   trail: TrailPoint[]
 }
 
+// GPS取得前の表示位置。金沢工業大学 扇が丘キャンパス（世界測地系）。
+const INITIAL_CENTER = { lat: 36.53042, lng: 136.62763 }
+
 function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
   const map = useMap()
   const last = trail[trail.length - 1]
@@ -15,7 +18,7 @@ function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
 
 export function MapView({ trail }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
+  const center = trail[trail.length - 1] ?? INITIAL_CENTER
 
   return (
     <MapContainer
