@@ -95,6 +95,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const navigate = useNavigate()
   const {
     trail,
+    currentPosition,
     error,
     start: startGPS,
     stop: stopGPS,
@@ -186,7 +187,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       )}
 
       <div className="flex-1 relative">
-        <MapView trail={trail} />
+        <MapView trail={trail} currentPosition={currentPosition} />
         {isLooking && (
           <div
             className="absolute inset-0 bg-black/70 flex items-center justify-center z-[1000] p-6"

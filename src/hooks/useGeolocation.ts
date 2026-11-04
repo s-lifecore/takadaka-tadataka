@@ -19,6 +19,7 @@ function distanceMeters(a: TrailPoint, b: TrailPoint): number {
 
 export function useGeolocation(initialTrail: TrailPoint[] = []) {
   const [trail, setTrail] = useState<TrailPoint[]>(initialTrail)
+  const [currentPosition, setCurrentPosition] = useState<TrailPoint | null>(null)
   const [error, setError] = useState<string | null>(null)
   const watchIdRef = useRef<number | null>(null)
   const lastRef = useRef<TrailPoint | null>(initialTrail[initialTrail.length - 1] ?? null)
@@ -40,13 +41,14 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        if (isPausedRef.current) return
-        if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           t: Date.now(),
         }
+        setCurrentPosition(point)
+        if (isPausedRef.current) return
+        if (pos.coords.accuracy > MIN_ACCURACY) return
         if (lastRef.current) {
           const distance = distanceMeters(lastRef.current, point)
           if (distance < MIN_DISTANCE) return
@@ -71,5 +73,5 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
     }
   }, [])
 
-  return { trail, error, start, stop, pause, resume }
+  return { trail, currentPosition, error, start, stop, pause, resume }
 }
