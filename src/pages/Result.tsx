@@ -1,36 +1,96 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { loadDrawing, saveResult } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 import { Judgement } from './Judgement'
 
-type Props = {
-  trail: TrailPoint[]
-  onRetry: () => void
+export function Result() {
+  const { id } = useParams<{ id: string }>()
+  return <LoadResult key={id} id={id!} />
 }
 
-export function Result({ trail, onRetry }: Props) {
-  const [result, setResult] = useState<AIResult | null>(null)
-  const [judging, setJudging] = useState(trail.length >= 2)
+function LoadResult({ id }: { id: string }) {
+  const [drawing, setDrawing] = useState<{
+    theme: string
+    trail: TrailPoint[]
+    result?: AIResult
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const requested = useRef(false)
+  useEffect(() => {
+    let active = true
+    loadDrawing(id)
+      .then((value) => {
+        if (active) setDrawing(value)
+      })
+      .catch(() => {
+        if (active) setError('作品を読み込めませんでした。URLと通信環境を確認してください。')
+      })
+    return () => {
+      active = false
+    }
+  }, [id])
+  if (error)
+    return (
+      <main className="p-6">
+        <p role="alert">{error}</p>
+        <Link to="/">ホームへ戻る</Link>
+      </main>
+    )
+  if (!drawing)
+    return (
+      <main className="p-6" role="status">
+        作品を読み込み中…
+      </main>
+    )
+  return (
+    <DrawingResult
+      id={id}
+      trail={drawing.trail}
+      theme={drawing.theme}
+      savedResult={drawing.result}
+    />
+  )
+}
+
+function DrawingResult({
+  id,
+  trail,
+  theme,
+  savedResult,
+}: {
+  id: string
+  trail: TrailPoint[]
+  theme: string
+  savedResult?: AIResult
+}) {
+  const navigate = useNavigate()
+  const [result, setResult] = useState<AIResult | null>(savedResult ?? null)
+  const [judging, setJudging] = useState(!savedResult && trail.length >= 2)
+  const [error, setError] = useState<string | null>(null)
+  const requested = useRef(!!savedResult)
   const image = useRef<string | null>(null)
 
-  const handleCanvasReady = useCallback(async (base64: string) => {
-    if (requested.current) return
-    requested.current = true
-    image.current = base64
-    setError(null)
-    setJudging(true)
-    try {
-      const res = await judgeDrawing(base64, 'りんご')
-      setResult(res)
-    } catch {
-      setError('作品を判定できませんでした。通信環境を確認して、もう一度お試しください。')
-    } finally {
-      setJudging(false)
-    }
-  }, [])
+  const handleCanvasReady = useCallback(
+    async (base64: string) => {
+      if (requested.current) return
+      requested.current = true
+      image.current = base64
+      setError(null)
+      setJudging(true)
+      try {
+        const res = result ?? (await judgeDrawing(base64, theme))
+        setResult(res)
+        await saveResult(id, res)
+      } catch {
+        setError('作品の判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
+      } finally {
+        setJudging(false)
+      }
+    },
+    [id, theme, result],
+  )
 
   if (judging) {
     return (
@@ -66,7 +126,7 @@ export function Result({ trail, onRetry }: Props) {
               void handleCanvasReady(image.current)
             }}
           >
-            もう一度判定する
+            {result ? '保存を再試行する' : 'もう一度判定する'}
           </button>
         </div>
       )}
@@ -85,7 +145,7 @@ export function Result({ trail, onRetry }: Props) {
       )}
 
       <button
-        onClick={onRetry}
+        onClick={() => navigate('/')}
         className="w-full max-w-sm py-4 border-2 border-black text-black text-lg font-semibold rounded-2xl"
       >
         もう一度
