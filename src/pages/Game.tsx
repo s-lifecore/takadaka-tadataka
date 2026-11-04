@@ -130,6 +130,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const [paused, setPaused] = useState(false)
   const {
     trail,
+    currentPosition,
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
@@ -234,7 +235,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
           </div>
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
-          <MapView trail={trail} />
+          <MapView trail={trail} currentPosition={currentPosition} />
           {paused && !isLooking && <div className="walking-paused">一時停止中</div>}
           {isLooking && (
             <div className="walking-warning" role="alert">
