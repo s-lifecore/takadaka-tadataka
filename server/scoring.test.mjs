@@ -66,7 +66,7 @@ test('認証失敗・利用上限・モデル設定エラーは再試行しな�
 })
 
 test('不正なJSON・点数・理由を採点結果として返さない', async () => {
-  for (const value of [{ score: 101, reason: '形' }, { score: 0.5, reason: '形' }, { score: 50, reason: '' }, { score: 50, reason: 'あ'.repeat(81) }, null]) {
+  for (const value of [{ score: 101, reason: '形' }, { score: '85.12345', reason: '形' }, { score: Infinity, reason: '形' }, { score: 50, reason: '' }, { score: 50, reason: 'あ'.repeat(81) }, null]) {
     await assert.rejects(scoreDrawing(input, { apiKey: 'test', fetchImpl: async () => success(value) }), err => err.status === 502)
   }
   await assert.rejects(scoreDrawing(input, { apiKey: 'test', fetchImpl: async () => Response.json({ choices: [{ message: { content: 'not JSON' } }] }) }), err => err.status === 502)
@@ -131,5 +131,15 @@ test('Groqの設定・認証・利用上限エラーを表示する', async () =
       provider: 'groq', apiKey: 'test',
       fetchImpl: async () => new Response('', { status }),
     }), err => err.message.includes('Groq') && err.status === (status === 429 ? 429 : 502))
+  }
+})
+
+ test('小数の点数を受け付け、小数点以下5桁に丸める', async () => {
+  for (const [score, expected] of [[85.12345, 85.12345], [85.123456, 85.12346], [0, 0], [100, 100]]) {
+    const result = await scoreDrawing(input, {
+      provider: 'groq', apiKey: 'test',
+      fetchImpl: async () => success({ score, reason: '丸みが伝わるよ。' }),
+    })
+    assert.equal(result.score, expected)
   }
 })

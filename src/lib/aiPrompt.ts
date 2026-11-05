@@ -1,1 +1,1 @@
-export { createScoringPrompt } from "../../server/ai-prompt.mjs";
+export { createScoringPrompt } from '../../server/ai-prompt.mjs'

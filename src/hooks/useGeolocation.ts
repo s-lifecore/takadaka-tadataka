@@ -43,8 +43,8 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
         if (isPausedRef.current) return
         if (pos.coords.accuracy > MIN_ACCURACY) return
         const point: TrailPoint = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
+          lat: Number(pos.coords.latitude.toFixed(5)),
+          lng: Number(pos.coords.longitude.toFixed(5)),
           t: Date.now(),
         }
         if (lastRef.current) {

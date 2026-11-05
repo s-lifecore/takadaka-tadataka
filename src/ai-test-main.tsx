@@ -143,7 +143,7 @@ function AITestPage() {
       <section aria-live="polite" aria-busy={loading}>
         {result && (
           <>
-            <h2>採点結果：{result.score}%</h2>
+            <h2>採点結果：{result.score.toFixed(5)}%</h2>
             <progress aria-label="得点" value={result.score} max={100} />
             <h3>AIからのコメント</h3>
             <p>{result.reason}</p>
@@ -155,8 +155,8 @@ function AITestPage() {
         <p>同じ画像・お題を5回採点してください。直近5回を集計します。</p>
         <p>
           実行回数：{scores.length}/5{'\u3000'}平均：
-          {scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—'}%
-          {'\u3000'}最大差：{scores.length ? spread : '—'}%
+          {scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(5) : '—'}%
+          {'\u3000'}最大差：{scores.length ? spread.toFixed(5) : '—'}%
         </p>
         {scores.length === 5 && (
           <p>
@@ -188,7 +188,7 @@ function AITestPage() {
                   <tr key={i}>
                     <td>{i + 1}</td>
                     <td>{r.theme}</td>
-                    <td>{r.score}</td>
+                    <td>{r.score.toFixed(5)}</td>
                     <td>{r.reason}</td>
                   </tr>
                 ))}

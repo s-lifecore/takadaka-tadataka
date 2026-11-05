@@ -116,7 +116,7 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
       {result && (
         <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
           <div className="text-center">
-            <span className="text-6xl font-bold">{result.score}</span>
+            <span className="text-4xl font-bold">{result.score.toFixed(5)}</span>
             <span className="text-2xl text-gray-400">%</span>
           </div>
           <p className="text-sm text-gray-500">{result.reason}</p>

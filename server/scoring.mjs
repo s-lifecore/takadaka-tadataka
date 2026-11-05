@@ -30,11 +30,11 @@ export function validateInput(input) {
 }
 
 export function validateResult(data) {
-  if (!data || !Number.isInteger(data.score) || data.score < 0 || data.score > 100 ||
+  if (!data || (typeof data.score !== 'number' || !Number.isFinite(data.score)) || data.score < 0 || data.score > 100 ||
       typeof data.reason !== 'string' || !data.reason.trim() || [...data.reason].length > 80) {
     throw new ScoringError(502, 'AIの採点結果が不正です。再度お試しください')
   }
-  return { score: data.score, reason: data.reason }
+  return { score: Number(data.score.toFixed(5)), reason: data.reason }
 }
 
 export function scoringOptionsFromEnv(env) {
