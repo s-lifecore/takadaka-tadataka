@@ -376,17 +376,19 @@ GROQ_MODEL=qwen/qwen3.8-27b
 `/ai-test.html` で検証できます。画像対応とJSON出力の公式仕様: [Groq Vision](https://console.groq.com/docs/vision)。
 ## ページ一覧とURL
 
-| URL           | 画面                                   |
-| ------------- | -------------------------------------- |
-| `/`           | ホーム                                 |
-| `/map`        | 3秒カウントダウン・Firestore作品ID生成 |
-| `/map/:id`    | 地図・GPS・15分タイマー                |
-| `/result/:id` | AI判定中 → 結果・保存                  |
+| URL | 画面 |
+| --- | --- |
+| `/` | ホーム |
+| `/collection` | 作品帳（既存のサンプル表示） |
+| `/map` | 3秒カウントダウン・Firestore作品作成 |
+| `/map/:id` | 地図・GPS・15分タイマー |
+| `/result/:id` | AI採点・結果の保存と表示 |
 
-`:id` は `drawings/{drawingId}` のIDです。判定中、結果表示、エラー時の再試行は
-同じ `/result/:id` 内で行います。保存済み結果を開いた場合は再判定しません。
-採点結果と軌跡を同じ作品IDに保存し、ホームボタンは `/` へ戻ります。
-作品のPNGダウンロードも利用できます。
+`:id` はゲーム開始時に作成する `drawings/{drawingId}` のIDです。
+完了ボタンまたは時間切れで軌跡を保存し、結果画面では同じIDの作品を読み込みます。
+保存済みの採点結果は再判定せず表示します。「ホームに戻る」は `/` へ移動します。
 Firebase Anonymous Auth と Firestore の読み書き権限が必要です。
-途中の再読み込みでは未保存の軌跡とタイマーは復元しません。
-Firebase Hosting は `firebase.json` のリライトで直接アクセスに対応します。
+プレイ途中の再読み込みでは未保存の軌跡とタイマーは復元しません。
+Firebase Hosting の直接アクセスは `firebase.json` のリライトで対応します。
+
+お題画面: `/playalone` → `pages/Theme.tsx`

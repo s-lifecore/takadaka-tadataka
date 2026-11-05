@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { latLng } from 'leaflet'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/huggingface'
+import { MapView } from '../components/MapView'
+import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
 const MIN_JUDGEMENT_MS = 3000
@@ -81,6 +84,15 @@ function DrawingResult({
   const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
   const requested = useRef(false)
+  const distanceKm = useMemo(
+    () =>
+      trail.reduce((meters, point, index) => {
+        if (index === 0) return meters
+        const previous = trail[index - 1]
+        return meters + latLng(previous.lat, previous.lng).distanceTo([point.lat, point.lng])
+      }, 0) / 1000,
+    [trail],
+  )
 
   const handleCanvasReady = useCallback(
     async (base64: string) => {
@@ -96,6 +108,9 @@ function DrawingResult({
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
+        // 画像のアップロードが失敗しても、リロード時は保存済みの採点結果を使う。
+        await saveResult(id, res)
+        setSaved(true)
         const publicId = imagePublicId ?? (await uploadDrawingImage(base64)).publicId
         setImagePublicId(publicId)
         await saveResult(id, res, publicId)
@@ -137,11 +152,23 @@ function DrawingResult({
 
         <section className="result-artwork" aria-label="あなたの作品">
           <h2>あなたの作品</h2>
-          <div className="result-canvas">
-            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
-            {trail.length < 2 && <p>記録された軌跡がありません</p>}
+          <div className="result-route-heading">
+            <span>歩いた経路</span>
+            <p>
+              歩行距離 <strong>{distanceKm.toFixed(2)}</strong> km
+            </p>
           </div>
-          <p className="result-artwork-caption">地図を含まないGPSの線画</p>
+          {trail.length > 0 ? (
+            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
+              <MapView trail={trail} fitTrail />
+            </div>
+          ) : (
+            <p className="result-message">記録された歩行経路がありません。</p>
+          )}
+          <p className="result-route-note">距離は記録されたGPSの軌跡から計算した目安です。</p>
+          <div hidden aria-hidden="true">
+            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+          </div>
         </section>
 
         {result && (
@@ -167,6 +194,42 @@ function DrawingResult({
             もう一度試す
           </button>
         )}
+        <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
+          <h2>AIの採点結果</h2>
+          {result && saved ? (
+            <>
+              <p className="result-points">
+                {result.score}
+                <span>点</span>
+              </p>
+              <p className="result-guess">AIの予想：{result.guess || '判定なし'}</p>
+              <p className="result-reason">{result.reason}</p>
+            </>
+          ) : (
+            <p className="result-message" role="status">
+              {judging
+                ? 'AIが作品を判定しています…'
+                : error
+                  ? '判定結果を取得できませんでした'
+                  : '採点できる軌跡がありません'}
+            </p>
+          )}
+          {error && (
+            <div className="result-error" role="alert">
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!image) return
+                  requested.current = false
+                  void handleCanvasReady(image)
+                }}
+              >
+                {result ? '保存を再試行する' : 'もう一度判定する'}
+              </button>
+            </div>
+          )}
+        </section>
 
         <footer className="result-actions">
           <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>

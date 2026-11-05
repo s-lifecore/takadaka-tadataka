@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
-import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function Icon({ kind }: { kind: 'compass' | 'steps' | 'people' | 'book' | 'guide' }) {
@@ -72,34 +70,21 @@ function Illustration() {
 
 export function Home() {
   const navigate = useNavigate()
-  const [panel, setPanel] = useState<'works' | null>(null)
-  const dialogRef = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    if (panel) dialogRef.current?.showModal()
-    else dialogRef.current?.close()
-  }, [panel])
-
-  function handleDialogClick(event: MouseEvent<HTMLDialogElement>) {
-    if (event.target !== event.currentTarget) return
-
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const outside =
-      event.clientX < bounds.left ||
-      event.clientX > bounds.right ||
-      event.clientY < bounds.top ||
-      event.clientY > bounds.bottom
-
-    if (outside) setPanel(null)
-  }
-
   return (
     <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
-      <header className="home-top flex items-center justify-between">
+      <header className="home-top flex flex-wrap items-center justify-between gap-3">
         <span className="home-badge">
           <Icon kind="compass" />
           旅のスケッチブック
         </span>
+        <nav className="home-auth" aria-label="アカウント">
+          <a href="#" className="home-signin">
+            サインイン
+          </a>
+          <a href="#" className="home-login">
+            ログイン
+          </a>
+        </nav>
       </header>
       <div className="home-title">
         <h1>高々忠敬</h1>
@@ -132,7 +117,7 @@ export function Home() {
         </button>
       </section>
       <div className="home-links mt-[18px] grid grid-cols-2 gap-[11px]">
-        <button onClick={() => setPanel('works')}>
+        <button onClick={() => navigate('/collection')}>
           <Icon kind="book" />
           <strong>作品帳</strong>
           <small>旅の思い出を見る</small>
@@ -148,20 +133,6 @@ export function Home() {
         <span>歩いて、描いて、AIに見せよう！</span>
         <Icon kind="steps" />
       </footer>
-      <dialog
-        ref={dialogRef}
-        className="home-dialog"
-        aria-labelledby="home-dialog-title"
-        onCancel={() => setPanel(null)}
-        onClose={() => setPanel(null)}
-        onClick={handleDialogClick}
-      >
-        <h2 id="home-dialog-title">作品帳</h2>
-        <p>保存した作品を一覧で見る画面は準備中です。</p>
-        <button autoFocus onClick={() => setPanel(null)}>
-          閉じる
-        </button>
-      </dialog>
     </main>
   )
 }
