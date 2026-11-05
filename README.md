@@ -328,8 +328,4 @@ Firebase Anonymous Auth と Firestore の読み書き権限が必要です。
 プレイ途中の再読み込みでは未保存の軌跡とタイマーは復元しません。
 Firebase Hosting の直接アクセスは `firebase.json` のリライトで対応します。
 
-お題画面: `/playalone` → `pages/Theme.tsx`。
-
-AI判定中画面（`Judgement.tsx`）は `/result/:id` 内に表示します。
-判定結果・画像はURLと同じ作品IDに保存し、保存済み結果を開いた場合は再判定しません。
-判定や保存に失敗した場合は同じURLで再試行できます。
+お題画面: `/playalone` → `pages/Theme.tsx`

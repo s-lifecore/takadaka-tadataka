@@ -8,7 +8,6 @@ import { Rules } from './pages/Rules'
 
 export function App() {
   const { pathname } = useLocation()
-
   return (
     <Routes>
       <Route path="/" element={<Home />} />
