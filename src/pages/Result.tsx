@@ -166,11 +166,23 @@ function DrawingResult({
 
         <section className="result-artwork" aria-label="あなたの作品">
           <h2>あなたの作品</h2>
-          <div className="result-canvas">
-            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
-            {trail.length < 2 && <p>記録された軌跡がありません</p>}
+          <div className="result-route-heading">
+            <span>歩いた経路</span>
+            <p>
+              歩行距離 <strong>{distanceKm.toFixed(2)}</strong> km
+            </p>
           </div>
-          <p className="result-artwork-caption">地図を含まないGPSの線画</p>
+          {trail.length > 0 ? (
+            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
+              <MapView trail={trail} fitTrail />
+            </div>
+          ) : (
+            <p className="result-message">記録された歩行経路がありません。</p>
+          )}
+          <p className="result-route-note">距離は記録されたGPSの軌跡から計算した目安です。</p>
+          <div hidden aria-hidden="true">
+            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+          </div>
         </section>
 
         {generatedImage && (
@@ -178,7 +190,6 @@ function DrawingResult({
             <AdvancedImage cldImg={generatedImage} />
           </div>
         )}
-        {saved && <p className="result-message">保存しました</p>}
         <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
           <h2>AIの採点結果</h2>
           {result && saved ? (
@@ -214,23 +225,6 @@ function DrawingResult({
               </button>
             </div>
           )}
-        </section>
-
-        <section className="result-route" aria-labelledby="result-route-title">
-          <div className="result-route-heading">
-            <h2 id="result-route-title">歩いた経路</h2>
-            <p>
-              歩行距離 <strong>{distanceKm.toFixed(2)}</strong> km
-            </p>
-          </div>
-          {trail.length > 0 ? (
-            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
-              <MapView trail={trail} fitTrail />
-            </div>
-          ) : (
-            <p className="result-message">記録された歩行経路がありません。</p>
-          )}
-          <p className="result-route-note">距離は記録されたGPSの軌跡から計算した目安です。</p>
         </section>
 
         <footer className="result-actions">
