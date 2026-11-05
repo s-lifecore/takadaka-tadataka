@@ -21,7 +21,9 @@ export async function judgeDrawing(imageBase64: string, theme: string): Promise<
     contents: [
       {
         parts: [
-          { text: `お題は「${theme}」です。この絵を採点してください。\n${RUBRIC}` },
+          {
+            text: `お題は「${theme}」です。この絵を採点してください。\n${RUBRIC}`,
+          },
           { inline_data: { mime_type: 'image/png', data: imageBase64 } },
         ],
       },
