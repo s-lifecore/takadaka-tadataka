@@ -14,10 +14,10 @@ main        ← 動くものだけ置く。直接 push 禁止
 └─ feat/firebase-setup （バックエンド）
 ```
 
-| ブランチ | 誰が使う | マージ先 |
-|----------|----------|----------|
-| `main` | PM がリリース時のみ | — |
-| `feat/*` | 各担当が作業 | `main` |
+| ブランチ | 誰が使う            | マージ先 |
+| -------- | ------------------- | -------- |
+| `main`   | PM がリリース時のみ | —        |
+| `feat/*` | 各担当が作業        | `main`   |
 
 ※ブランチ命名規則は @CONTRIBUTING.md を参照してください。
 
@@ -93,6 +93,7 @@ git switch -c feat/ブランチ名
 ```
 
 ブランチ名の例：
+
 - `feat/map-view` — 地図・GPS
 - `feat/trail-canvas` — Canvas描画・PWA
 - `feat/gemini-judge` — AI判定

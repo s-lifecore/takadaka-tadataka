@@ -3,6 +3,7 @@ import { Game } from './pages/Game'
 import { Home } from './pages/Home'
 import { Collection } from './pages/Collection'
 import { Result } from './pages/Result'
+import { Theme } from './pages/Theme'
 import { Rules } from './pages/Rules'
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
       <Route path="/" element={<Home />} />
       <Route path="/collection" element={<Collection />} />
       <Route path="/rules" element={<Rules />} />
+      <Route path="/playalone" element={<Theme />} />
       <Route path="/map" element={<Game key={pathname} />} />
       <Route path="/map/:id" element={<Game key={pathname} />} />
       <Route path="/result/:id" element={<Result key={pathname} />} />

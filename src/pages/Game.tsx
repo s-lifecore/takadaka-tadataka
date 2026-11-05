@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Ready } from './Ready'
 import { MapView } from '../components/MapView'
 import { Timer } from '../components/Timer'
 import { useDeviceOrientation } from '../hooks/useDeviceOrientation'
@@ -42,23 +43,16 @@ function StartCountdown() {
     }
   }, [navigate, countdownFinished])
 
-  return (
-    <div className="flex flex-col items-center justify-center h-screen gap-6 bg-white">
-      <p className="text-lg font-bold">🍎 りんご</p>
-      <div role="status" aria-live="assertive" aria-atomic="true" className="text-center">
-        <p className="text-gray-600 mb-4">ゲーム開始まで</p>
-        {error ? (
-          <p role="alert">{error}</p>
-        ) : (
-          <p className="text-8xl font-mono font-bold tabular-nums">{remaining || '準備中…'}</p>
-        )}
-      </div>
-      <p className="text-sm text-gray-500">画面を見ながら歩かないでください</p>
-      <Link to="/" className="underline">
-        ホームへ戻る
-      </Link>
-    </div>
-  )
+  if (error) {
+    return (
+      <main className="ready-page flex flex-col items-center justify-center gap-6">
+        <p role="alert">{error}</p>
+        <Link to="/">ホームへ戻る</Link>
+      </main>
+    )
+  }
+
+  return <Ready count={remaining} onCancel={() => navigate('/')} />
 }
 
 function LoadGame({ id }: { id: string }) {
