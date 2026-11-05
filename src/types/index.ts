@@ -1,6 +1,9 @@
-export type TrailPoint = {
+export type Position = {
   lat: number
   lng: number
+}
+
+export type TrailPoint = Position & {
   t: number // Unix timestamp (ms)
 }
 

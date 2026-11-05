@@ -1,4 +1,5 @@
-import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import dayjs from 'dayjs'
 import { auth, db, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -18,7 +19,12 @@ async function ensureUser() {
 export async function createDrawing() {
   const user = await ensureUser()
   const drawing = doc(collection(db, 'drawings'))
-  await setDoc(drawing, { uid: user.uid, theme: 'りんご', trail: [], createdAt: serverTimestamp() })
+  await setDoc(drawing, {
+    uid: user.uid,
+    theme: 'りんご',
+    trail: [],
+    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
+  })
   return drawing.id
 }
 export async function loadDrawing(id: string) {
