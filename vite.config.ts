@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       allowedHosts: [
-        'chef-unicycle-nanometer.ngrok-free.dev',
+        '.ngrok-free.dev',
         ...(NGROK_HOST?.trim() ? [NGROK_HOST.trim()] : []),
       ],
     },
