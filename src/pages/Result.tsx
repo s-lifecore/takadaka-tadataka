@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { latLng } from 'leaflet'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
@@ -8,6 +9,7 @@ import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
+import { MapView } from '../components/MapView'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -85,6 +87,15 @@ function DrawingResult({
   const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
   const requested = useRef(false)
+  const distanceKm = useMemo(
+    () =>
+      trail.reduce((meters, point, index) => {
+        if (index === 0) return meters
+        const previous = trail[index - 1]
+        return meters + latLng(previous.lat, previous.lng).distanceTo([point.lat, point.lng])
+      }, 0) / 1000,
+    [trail],
+  )
 
   const handleCanvasReady = useCallback(
     async (base64: string) => {
@@ -100,6 +111,9 @@ function DrawingResult({
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
+        // 画像のアップロードが失敗しても、リロード時は保存済みの採点結果を使う。
+        await saveResult(id, res)
+        setSaved(true)
         const publicId = imagePublicId ?? (await uploadDrawingImage(base64)).publicId
         setImagePublicId(publicId)
         await saveResult(id, res, publicId)
@@ -167,7 +181,7 @@ function DrawingResult({
         {saved && <p className="result-message">保存しました</p>}
         <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
           <h2>AIの採点結果</h2>
-          {result ? (
+          {result && saved ? (
             <>
               <p className="result-points">
                 {result.score}
@@ -200,6 +214,23 @@ function DrawingResult({
               </button>
             </div>
           )}
+        </section>
+
+        <section className="result-route" aria-labelledby="result-route-title">
+          <div className="result-route-heading">
+            <h2 id="result-route-title">歩いた経路</h2>
+            <p>
+              歩行距離 <strong>{distanceKm.toFixed(2)}</strong> km
+            </p>
+          </div>
+          {trail.length > 0 ? (
+            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
+              <MapView trail={trail} fitTrail />
+            </div>
+          ) : (
+            <p className="result-message">記録された歩行経路がありません。</p>
+          )}
+          <p className="result-route-note">距離は記録されたGPSの軌跡から計算した目安です。</p>
         </section>
 
         <footer className="result-actions">
