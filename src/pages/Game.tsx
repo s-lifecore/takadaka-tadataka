@@ -124,29 +124,22 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const navigate = useNavigate()
   const [paused, setPaused] = useState(false)
   const {
-    isLooking,
     isShaking,
-    hasOrientation,
-    status: orientationStatus,
+    isStationary: isMotionStationary,
+    status: motionStatus,
     isRequesting,
     requestPermission,
   } = useDeviceOrientation()
   const {
     trail,
     currentPosition,
-    isStationary,
-    isMoving,
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
     resume: resumeGPS,
-  } = useGeolocation(
-    initialTrail,
-    orientationStatus !== 'listening' || !hasOrientation || isLooking,
-    isShaking,
-  )
-  const showWalkingWarning = isLooking && isMoving
+  } = useGeolocation(initialTrail)
+  const showWalkingWarning = isShaking
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
   const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
   const finishing = useRef(false)
@@ -169,7 +162,6 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       resumeGPS()
       startGPS()
     }
-    return () => stopGPS()
   }, [paused, saving, expired, pauseGPS, stopGPS, resumeGPS, startGPS])
 
   const handleFinish = useCallback(async () => {
@@ -213,7 +205,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     <main className="walking-page">
       <div className="walking-content">
         <header className="walking-header">
-          <h1>{paused || showWalkingWarning ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
+          <h1>{paused ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
           <WalkingIcon name="compass" />
         </header>
         <div className="walking-summary">
@@ -242,53 +234,65 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             )}
           </div>
         )}
-        {(orientationStatus === 'permission-required' ||
-          orientationStatus === 'denied' ||
-          orientationStatus === 'error') && (
+        {(motionStatus === 'permission-required' ||
+          motionStatus === 'denied' ||
+          motionStatus === 'error') && (
           <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
             <p>
-              {orientationStatus === 'denied'
-                ? '傾きセンサーの利用が拒否されています。ブラウザの設定で許可してください。'
-                : orientationStatus === 'error'
-                  ? '傾きセンサーを有効にできませんでした。もう一度お試しください。'
-                  : '歩きスマホ警告のため、端末の傾きセンサーの利用を許可してください。'}
+              {motionStatus === 'denied'
+                ? '加速度センサーの利用が拒否されています。ブラウザの設定で許可してください。'
+                : motionStatus === 'error'
+                  ? '加速度センサーを有効にできませんでした。もう一度お試しください。'
+                  : '歩きスマホ警告のため、端末の加速度センサーの利用を許可してください。'}
             </p>
             <button
               onClick={requestPermission}
               disabled={isRequesting}
               className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
             >
-              {isRequesting ? '確認中…' : '傾きセンサーを有効にする'}
+              {isRequesting ? '確認中…' : '加速度センサーを有効にする'}
             </button>
           </div>
         )}
-        {orientationStatus === 'unsupported' && (
+        {motionStatus === 'unsupported' && (
           <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
-            この環境では歩きスマホ検知を利用できません。静止を確認できた場合のみ位置情報を利用できます。HTTPS対応のスマートフォンでご利用ください。
+            この環境では加速度センサーを利用できないため、地図の表示を制限しています。HTTPS対応のスマートフォンでご利用ください。
           </div>
-        )}
-        {orientationStatus === 'listening' && !hasOrientation && (
-          <p className="mb-3 text-sm" role="status">
-            端末の傾きを確認しています。静止を確認できた場合のみ位置情報を利用できます。
-          </p>
-        )}
-        {isLooking && !isStationary && !isMoving && !paused && !saving && !expired && (
-          <p className="mb-3 text-sm" role="status">
-            静止状態を確認しています。確認できるまで現在地の更新と軌跡の記録を停止しています。
-          </p>
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
           <MapView trail={trail} currentPosition={currentPosition} />
-          {paused && !showWalkingWarning && <div className="walking-paused">一時停止中</div>}
+          {!isMotionStationary && !showWalkingWarning && !saving && !expired && (
+            <div className="walking-warning" role="status">
+              <div>
+                <p>
+                  {motionStatus === 'listening'
+                    ? '端末の動きを確認しています。'
+                    : '端末の動きを確認できません。'}
+                </p>
+                <p>
+                  {motionStatus === 'listening'
+                    ? '3秒間、端末を動かさずにお待ちください。'
+                    : '加速度センサーが利用できる環境で、利用を許可してください。'}
+                </p>
+              </div>
+            </div>
+          )}
+          {paused && isMotionStationary && !showWalkingWarning && (
+            <div className="walking-paused">一時停止中</div>
+          )}
           {showWalkingWarning && (
             <div className="walking-warning" role="alert">
               <div>
                 <p>前を向いて歩いてください。</p>
-                <p>移動中は現在地の更新と軌跡の記録を停止します。静止中は利用できます。</p>
                 <p>
                   {paused
-                    ? '端末を下げてから「再開する」を押してください。'
-                    : '端末を下げると記録が再開します。'}
+                    ? '一時停止中のため、軌跡の記録は停止しています。'
+                    : '地図を暗くしていますが、軌跡の記録は続けています。'}
+                </p>
+                <p>
+                  {paused
+                    ? '立ち止まってから「再開する」を押してください。'
+                    : '3秒間、端末の動きが収まると地図が見えるようになります。'}
                 </p>
               </div>
             </div>
