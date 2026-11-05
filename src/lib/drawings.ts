@@ -50,7 +50,7 @@ export async function loadDrawing(id: string) {
   return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
 }
 
-export async function saveResult(id: string, result: AIResult, imagePublicId: string) {
+export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
   await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { result, imagePublicId })
+  await updateDoc(doc(db, 'drawings', id), { result, ...(imagePublicId ? { imagePublicId } : {}) })
 }
