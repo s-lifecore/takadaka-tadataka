@@ -10,6 +10,8 @@ type MotionConstructor = typeof DeviceMotionEvent & {
 
 const SHAKE_ACCELERATION = 3 // m/s²
 const SHAKE_HOLD_MS = 2000
+const SIDEWAYS_ENTER_ANGLE = 45
+const SIDEWAYS_EXIT_ANGLE = 35
 
 type Status = 'unsupported' | 'permission-required' | 'listening' | 'denied' | 'error'
 
@@ -36,16 +38,21 @@ export function useDeviceOrientation() {
 
   useEffect(() => {
     if (status !== 'listening') return
+    let sideways = false
 
     function handleOrientation(event: DeviceOrientationEvent) {
       const { beta, gamma } = event
       if (beta === null || gamma === null || !Number.isFinite(beta) || !Number.isFinite(gamma))
         return
-      // 画面の法線と鉛直方向の角度。横持ちでも画面を起こした姿勢を検知する。
+      // 左右への傾きはgammaで判定し、横方向なら歩行中も記録を許可する。
+      // 境界付近で注意表示が点滅しないよう、縦方向へ戻す側に10度の余裕を設ける。
+      const roll = Math.abs(gamma)
+      sideways = sideways ? roll > SIDEWAYS_EXIT_ANGLE : roll >= SIDEWAYS_ENTER_ANGLE
+      // 画面の法線と鉛直方向の角度。
       const upward = Math.cos((beta * Math.PI) / 180) * Math.cos((gamma * Math.PI) / 180)
       const angle = (Math.acos(Math.max(-1, Math.min(1, upward))) * 180) / Math.PI
       setHasOrientation(true)
-      setIsLooking(angle <= 80)
+      setIsLooking(angle <= 80 && !sideways)
     }
 
     window.addEventListener('deviceorientation', handleOrientation)
