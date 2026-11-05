@@ -124,20 +124,29 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const navigate = useNavigate()
   const [paused, setPaused] = useState(false)
   const {
+    isLooking,
+    isShaking,
+    hasOrientation,
+    status: orientationStatus,
+    isRequesting,
+    requestPermission,
+  } = useDeviceOrientation()
+  const {
     trail,
     currentPosition,
+    isStationary,
+    isMoving,
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
     resume: resumeGPS,
-  } = useGeolocation(initialTrail)
-  const {
-    isLooking,
-    status: orientationStatus,
-    isRequesting,
-    requestPermission,
-  } = useDeviceOrientation()
+  } = useGeolocation(
+    initialTrail,
+    orientationStatus !== 'listening' || !hasOrientation || isLooking,
+    isShaking,
+  )
+  const showWalkingWarning = isLooking && isMoving
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
   const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
   const finishing = useRef(false)
@@ -145,18 +154,23 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
-    startGPS()
     startTimer()
     acquire()
     return () => {
       stopGPS()
       release()
     }
-  }, [startGPS, startTimer, stopGPS, acquire, release])
+  }, [startTimer, stopGPS, acquire, release])
   useEffect(() => {
-    if (isLooking) pauseGPS()
-    else if (!paused && !saving) resumeGPS()
-  }, [isLooking, paused, saving, pauseGPS, resumeGPS])
+    if (paused || saving || expired) {
+      pauseGPS()
+      stopGPS()
+    } else {
+      resumeGPS()
+      startGPS()
+    }
+    return () => stopGPS()
+  }, [paused, saving, expired, pauseGPS, stopGPS, resumeGPS, startGPS])
 
   const handleFinish = useCallback(async () => {
     if (finishing.current) return
@@ -185,8 +199,6 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
 
   const togglePause = useCallback(() => {
     if (paused) {
-      if (!isLooking) resumeGPS()
-      startGPS()
       startTimer()
       acquire()
     } else {
@@ -195,13 +207,13 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       stopTimer()
     }
     setPaused((value) => !value)
-  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer, acquire])
+  }, [paused, startTimer, pauseGPS, stopGPS, stopTimer, acquire])
 
   return (
     <main className="walking-page">
       <div className="walking-content">
         <header className="walking-header">
-          <h1>{paused || isLooking ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
+          <h1>{paused || showWalkingWarning ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
           <WalkingIcon name="compass" />
         </header>
         <div className="walking-summary">
@@ -252,21 +264,31 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
         )}
         {orientationStatus === 'unsupported' && (
           <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
-            この環境では歩きスマホ検知を利用できません。HTTPS対応のスマートフォンでご利用ください。
+            この環境では歩きスマホ検知を利用できません。静止を確認できた場合のみ位置情報を利用できます。HTTPS対応のスマートフォンでご利用ください。
           </div>
+        )}
+        {orientationStatus === 'listening' && !hasOrientation && (
+          <p className="mb-3 text-sm" role="status">
+            端末の傾きを確認しています。静止を確認できた場合のみ位置情報を利用できます。
+          </p>
+        )}
+        {isLooking && !isStationary && !isMoving && !paused && !saving && !expired && (
+          <p className="mb-3 text-sm" role="status">
+            静止状態を確認しています。確認できるまで現在地の更新と軌跡の記録を停止しています。
+          </p>
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
           <MapView trail={trail} currentPosition={currentPosition} />
-          {paused && !isLooking && <div className="walking-paused">一時停止中</div>}
-          {isLooking && (
+          {paused && !showWalkingWarning && <div className="walking-paused">一時停止中</div>}
+          {showWalkingWarning && (
             <div className="walking-warning" role="alert">
               <div>
                 <p>前を向いて歩いてください。</p>
-                <p>軌跡の記録を一時停止しています。</p>
+                <p>移動中は現在地の更新と軌跡の記録を停止します。静止中は利用できます。</p>
                 <p>
                   {paused
-                    ? '端末を傾けてから「再開する」を押してください。'
-                    : '端末を傾けると記録が再開します。'}
+                    ? '端末を下げてから「再開する」を押してください。'
+                    : '端末を下げると記録が再開します。'}
                 </p>
               </div>
             </div>
