@@ -5,13 +5,9 @@ import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { TrailCanvas } from '../components/TrailCanvas'
-<<<<<<< HEAD
 import { saveDrawing, signInAnon } from '../lib/firebase'
-import { judgeDrawing } from '../lib/gemini'
+import { judgeDrawing } from '../lib/huggingface'
 import { loadTrail } from '../lib/drawings'
-=======
-import { judgeDrawing } from '../lib/grok'
->>>>>>> 1c7f5d5 (PRのコメントに対応)
 import type { AIResult, TrailPoint } from '../types'
 
 export function Result() {
@@ -64,14 +60,9 @@ function DrawingResult({ trail }: { trail: TrailPoint[] }) {
     if (started.current) return
     started.current = true
     setJudging(true)
-<<<<<<< HEAD
     setSaved(false)
     setError(null)
     const theme = 'りんご'
-=======
-    setError(null)
-    setResult(null)
->>>>>>> 1c7f5d5 (PRのコメントに対応)
     try {
       const res = await judgeDrawing(base64, 'りんご')
       setResult(res)

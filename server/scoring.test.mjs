@@ -9,12 +9,12 @@ const input = { theme: 'りんご', imageBase64 }
 const valid = { score: 85, reason: '丸みが似ていますが、上部のくぼみを表現するとさらに良くなります。' }
 const success = data => Response.json({ choices: [{ message: { content: JSON.stringify(data) } }] })
 
-test('Grokに画像・採点基準を送り、従来の結果形式を返す', async () => {
+test('Hugging Faceに画像・採点基準を送り、従来の結果形式を返す', async () => {
   const result = await scoreDrawing(input, {
     apiKey: 'test-secret',
     model: 'test-vision',
     fetchImpl: async (url, options) => {
-      assert.equal(url, 'https://api.x.ai/v1/chat/completions')
+      assert.equal(url, 'https://router.huggingface.co/v1/chat/completions')
       assert.equal(options.headers.Authorization, 'Bearer test-secret')
       const body = JSON.parse(options.body)
       assert.equal(body.model, 'test-vision')
@@ -56,11 +56,11 @@ test('一時的な503の後に成功する', async () => {
 })
 
 test('認証失敗・利用上限・モデル設定エラーは再試行しない', async () => {
-  for (const status of [400, 401, 403, 404, 429]) {
+  for (const status of [400, 401, 402, 403, 404, 429]) {
     let calls = 0
     await assert.rejects(scoreDrawing(input, {
       apiKey: 'secret', fetchImpl: async () => { calls++; return new Response('secret upstream error', { status }) },
-    }), err => err.status === (status === 429 ? 429 : 502) && !err.message.includes('secret'))
+    }), err => err.status === (status === 402 ? 402 : status === 429 ? 429 : 502) && !err.message.includes('secret'))
     assert.equal(calls, 1)
   }
 })

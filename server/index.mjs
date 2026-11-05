@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 import { createScoringMiddleware } from './scoring.mjs'
 
-const handle = createScoringMiddleware({ apiKey: process.env.XAI_API_KEY, model: process.env.XAI_MODEL })
+const handle = createScoringMiddleware({ apiKey: process.env.HF_TOKEN, model: process.env.HF_MODEL })
 const server = createServer((req, res) => {
   void handle(req, res, () => { res.statusCode = 404; res.end('Not Found') })
 })

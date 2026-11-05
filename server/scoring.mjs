@@ -39,13 +39,13 @@ export function validateResult(data) {
 
 export async function scoreDrawing(input, {
   apiKey,
-  model = 'grok-4-1-fast-non-reasoning',
+  model = 'Qwen/Qwen3.8-27B',
   fetchImpl = fetch,
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
 } = {}) {
   const { theme, base64 } = validateInput(input)
   if (!apiKey?.trim()) {
-    throw new ScoringError(503, 'サーバーのXAI_API_KEYが未設定です')
+    throw new ScoringError(503, 'サーバーのHF_TOKENが未設定です')
   }
   const body = JSON.stringify({
     model,
@@ -65,7 +65,7 @@ export async function scoreDrawing(input, {
   for (let attempt = 0; attempt < 3; attempt++) {
     let response
     try {
-      response = await fetchImpl('https://api.x.ai/v1/chat/completions', {
+      response = await fetchImpl('https://router.huggingface.co/v1/chat/completions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body,
@@ -85,9 +85,10 @@ export async function scoreDrawing(input, {
         await sleep(1000 * 2 ** attempt + Math.floor(Math.random() * 300))
         continue
       }
-      if (status === 401 || status === 403) throw new ScoringError(502, 'Grok APIの認証・利用権限をサーバー側で確認してください')
-      if (status === 429) throw new ScoringError(429, 'Grok APIの利用上限に達しました。時間をおいて再度お試しください')
-      if (status === 400 || status === 404) throw new ScoringError(502, 'Grok APIのモデル設定・画像対応・リクエスト形式をサーバー側で確認してください')
+      if (status === 401 || status === 403) throw new ScoringError(502, 'Hugging Face APIの認証・利用権限をサーバー側で確認してください')
+      if (status === 402) throw new ScoringError(402, 'Hugging Faceの推論クレジットが不足しています。アカウントの課金設定を確認してください')
+      if (status === 429) throw new ScoringError(429, 'Hugging Face APIの利用上限に達しました。時間をおいて再度お試しください')
+      if (status === 400 || status === 404) throw new ScoringError(502, 'Hugging Face APIのモデル設定・画像対応・リクエスト形式をサーバー側で確認してください')
       throw new ScoringError(503, 'AIが混み合っています。時間をおいて再度お試しください')
     }
     let result
