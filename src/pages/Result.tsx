@@ -11,6 +11,8 @@ import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
+const MIN_JUDGEMENT_MS = 3000
+
 export function Result() {
   const { id } = useParams<{ id: string }>()
   if (!id) return <Navigate to="/" replace />
@@ -92,6 +94,9 @@ function DrawingResult({
       if (savedResult) return
       setError(null)
       setJudging(true)
+      const minimumDisplay = new Promise<void>((resolve) => {
+        window.setTimeout(resolve, MIN_JUDGEMENT_MS)
+      })
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
@@ -102,6 +107,7 @@ function DrawingResult({
       } catch {
         setError('判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
       } finally {
+        await minimumDisplay
         setJudging(false)
       }
     },

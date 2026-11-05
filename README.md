@@ -55,6 +55,15 @@ Firebase Anonymous Auth と Firestore の設定、および本人の作品を読
 Firebase Hosting は `firebase.json` で `dist` を公開し、全パスを `index.html` にリライトします。
 Vite の開発サーバーは SPA のフォールバックに対応しています。
 
+### 地図の初期表示位置
+
+プレイ中の地図は、軌跡がない場合、金沢工業大学 扇が丘キャンパス（緯度 `36.53042`、経度 `136.62763`、世界測地系）を初期表示します。
+座標は [MapFanの金沢工業大学の地点情報](https://mapfan.com/spots/SC3II%2CJ%2C27)を小数点以下5桁に丸めた値です。
+設定箇所は `src/components/MapView.tsx` の `INITIAL_CENTER` です。
+この座標は表示専用で、GPSの測定値や採点用の軌跡には追加しません。
+保存済みの軌跡がある場合はその末尾を表示し、GPS位置が軌跡に記録されると、その位置へ地図が追従します。
+GPS未取得・権限拒否・精度不足などで軌跡が記録されない間は、初期表示位置のままになります。
+
 ---
 
 ## 最小機能要件（MVP）
@@ -116,10 +125,10 @@ type TrailPoint = {
 
 ```ts
 type AIResult = {
-  score: number // 0-100 単位: [%]
-  // guess: string;  // AIが判定した絵の内容
-  reason: string // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
-}
+  score: number;  // 0-100 単位: [%]
+  guess: string;  // AIが判定した絵の内容
+  reason: string; // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
+};
 ```
 
 ### Firestore スキーマ
