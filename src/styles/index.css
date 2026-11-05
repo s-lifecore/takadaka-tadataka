@@ -38,6 +38,38 @@ body,
   width: 24px;
   height: 24px;
 }
+.home-auth {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+.home-auth a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 1px solid #c89f76;
+  border-radius: 13px;
+  background: #fffaf0;
+  color: #604733;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.home-auth .home-login {
+  border-color: #a96d43;
+  background: #df894e;
+  color: #fffaf0;
+}
+.home-auth a:hover {
+  filter: brightness(0.96);
+}
+.home-auth a:focus-visible {
+  outline: 3px solid #a36034;
+  outline-offset: 4px;
+}
 .home-title {
   text-align: center;
   margin: 17px 0 15px;
