@@ -11,6 +11,7 @@ import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
 import type { TrailPoint } from '../types'
 
 const GAME_SECONDS = 15 * 60
+const GPS_LOADING_MIN_MS = 5000
 
 export function Game() {
   const { id } = useParams<{ id: string }>()
@@ -126,6 +127,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const {
     trail,
     currentPosition,
+    isLocating,
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
@@ -143,20 +145,49 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [minimumGPSLoading, setMinimumGPSLoading] = useState(true)
+  const [gpsLoadingDismissed, setGPSLoadingDismissed] = useState(false)
+  const showGPSLoading =
+    !gpsLoadingDismissed &&
+    (isLocating || minimumGPSLoading) &&
+    !gpsError &&
+    !paused &&
+    !saving &&
+    !expired
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setMinimumGPSLoading(false), GPS_LOADING_MIN_MS)
+    return () => clearTimeout(timeout)
+  }, [])
 
   useEffect(() => {
     startGPS()
-    startTimer()
     acquire()
     return () => {
       stopGPS()
+      stopTimer()
       release()
     }
-  }, [startGPS, startTimer, stopGPS, acquire, release])
+  }, [startGPS, stopGPS, stopTimer, acquire, release])
   useEffect(() => {
-    if (isLooking) pauseGPS()
-    else if (!paused && !saving) resumeGPS()
-  }, [isLooking, paused, saving, pauseGPS, resumeGPS])
+    if (showGPSLoading || isLocating || !currentPosition || gpsError || paused || saving || expired)
+      stopTimer()
+    else startTimer()
+  }, [
+    showGPSLoading,
+    isLocating,
+    currentPosition,
+    gpsError,
+    paused,
+    saving,
+    expired,
+    startTimer,
+    stopTimer,
+  ])
+  useEffect(() => {
+    if (isLooking || paused || saving || expired) pauseGPS()
+    else resumeGPS()
+  }, [isLooking, paused, saving, expired, pauseGPS, resumeGPS])
 
   const handleFinish = useCallback(async () => {
     if (finishing.current) return
@@ -186,16 +217,15 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const togglePause = useCallback(() => {
     if (paused) {
       if (!isLooking) resumeGPS()
+      setGPSLoadingDismissed(true)
       startGPS()
-      startTimer()
       acquire()
     } else {
       pauseGPS()
-      stopGPS()
       stopTimer()
     }
     setPaused((value) => !value)
-  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer, acquire])
+  }, [paused, isLooking, resumeGPS, startGPS, pauseGPS, stopTimer, acquire])
 
   return (
     <main className="walking-page">
@@ -257,8 +287,41 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
           <MapView trail={trail} currentPosition={currentPosition} />
-          {paused && !isLooking && <div className="walking-paused">一時停止中</div>}
-          {isLooking && (
+          {showGPSLoading && (
+            <div
+              className="walking-gps-loading"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <div className="walking-gps-loading-card">
+                <span className="walking-gps-spinner" aria-hidden="true" />
+                <h2>位置情報を取得しています</h2>
+                <p>立ち止まって、そのままお待ちください。</p>
+                <p>取得に20〜40秒ほどかかる場合があります。</p>
+                <p className="walking-gps-loading-hint">
+                  位置情報の利用を求められたら、許可してください。
+                </p>
+              </div>
+            </div>
+          )}
+          {paused && !isLooking && (
+            <div
+              className={saving ? 'walking-paused' : 'walking-warning'}
+              role={saving ? undefined : 'status'}
+            >
+              <div>
+                <p>一時停止中</p>
+                {!saving && (
+                  <>
+                    <p>軌跡の記録とタイマーを停止しています。</p>
+                    <p>「再開する」を押すと再開します。</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {isLooking && !showGPSLoading && (
             <div className="walking-warning" role="alert">
               <div>
                 <p>前を向いて歩いてください。</p>

@@ -21,7 +21,9 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
   const [trail, setTrail] = useState<TrailPoint[]>(initialTrail)
   const [currentPosition, setCurrentPosition] = useState<Position | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
   const watchIdRef = useRef<number | null>(null)
+  const watchGenerationRef = useRef(0)
   const lastRef = useRef<TrailPoint | null>(initialTrail[initialTrail.length - 1] ?? null)
   const isPausedRef = useRef(false)
 
@@ -37,13 +39,17 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
     if (watchIdRef.current !== null) return
     setError(null)
     if (!navigator.geolocation) {
+      setIsLocating(false)
       setError('このブラウザは位置情報に対応していません')
       return
     }
+    setIsLocating(true)
+    const generation = ++watchGenerationRef.current
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
         setError(null)
-        if (watchIdRef.current === null) return
+        setIsLocating(false)
         const point: TrailPoint = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -64,17 +70,23 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
         lastRef.current = point
         setTrail((prev) => [...prev, point])
       },
-      (err) => setError(err.message),
+      (err) => {
+        if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
+        setIsLocating(false)
+        setError(err.message)
+      },
       { enableHighAccuracy: true, maximumAge: 0 },
     )
   }, [])
 
   const stop = useCallback(() => {
+    watchGenerationRef.current += 1
+    setIsLocating(false)
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
     }
   }, [])
 
-  return { trail, currentPosition, error, start, stop, pause, resume }
+  return { trail, currentPosition, error, isLocating, start, stop, pause, resume }
 }
