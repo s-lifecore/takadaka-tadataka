@@ -28,12 +28,13 @@
 ```plaintext
 ホーム画面
   └─ ゲーム開始
-       └─ カウントダウン (3秒)
-            └─ プレイ中（地図 + 軌跡 + タイマー15分）
-                 ├─ 時間切れ or 完了ボタン
-                 │    └─ AI判定中（ローディング）
-                 │         └─ 結果画面（スコア・推測・保存）
-                 └─ 警告（歩きスマホ検知）
+       └─ お題確認（ひとりで遊ぶ）
+            └─ 冒険スタート → カウントダウン (3秒)
+                 └─ プレイ中（地図 + 軌跡 + タイマー15分）
+                      ├─ 時間切れ or 完了ボタン
+                      │    └─ AI判定中（ローディング）
+                      │         └─ 結果画面（スコア・推測・保存）
+                      └─ 警告（歩きスマホ検知）
 ```
 
 ## ページ一覧とURL
@@ -54,6 +55,34 @@
 Firebase Anonymous Auth と Firestore の設定、および本人の作品を読み書きできるセキュリティルールが必要です。
 Firebase Hosting は `firebase.json` で `dist` を公開し、全パスを `index.html` にリライトします。
 Vite の開発サーバーは SPA のフォールバックに対応しています。
+
+### 地図の初期表示位置
+
+プレイ中の地図は、軌跡がない場合、金沢工業大学 扇が丘キャンパス（緯度 `36.53042`、経度 `136.62763`、世界測地系）を初期表示します。
+座標は [MapFanの金沢工業大学の地点情報](https://mapfan.com/spots/SC3II%2CJ%2C27)を小数点以下5桁に丸めた値です。
+設定箇所は `src/components/MapView.tsx` の `INITIAL_CENTER` です。
+この座標は表示専用で、GPSの測定値や採点用の軌跡には追加しません。
+保存済みの軌跡がある場合はその末尾を表示し、GPS位置が軌跡に記録されると、その位置へ地図が追従します。
+GPS未取得・権限拒否・精度不足などで軌跡が記録されない間は、初期表示位置のままになります。
+
+---
+
+## ページ一覧とURL
+
+| URL           | 画面                           | コンポーネント                      |
+| ------------- | ------------------------------ | ----------------------------------- |
+| `/`           | ホーム                         | `pages/Home.tsx`                    |
+| `/playalone`  | お題・制限時間・注意事項の確認 | `pages/Theme.tsx`                   |
+| `/map`        | 3秒カウントダウン・作品作成    | `pages/Game.tsx` → `StartCountdown` |
+| `/map/:id`    | 地図・GPS・15分タイマー        | `pages/Game.tsx` → `PlayingGame`    |
+| `/result/:id` | AI判定・結果表示               | `pages/Result.tsx`                  |
+
+`:id` は開始時に作成する `drawings/{drawingId}` のIDです。
+完了時に軌跡を保存して結果へ移動し、採点結果も同じドキュメントへ保存します。
+「ホームに戻る」は `/` へ戻ります。ホームの「ひとりで遊ぶ」は `/playalone` のお題画面に進み、「冒険スタート！」で `/map` に移動します。カウントダウンは `/map` で一度だけ行います。
+Firebase の Anonymous Auth と Firestore の読み書き権限が必要です。
+プレイ中の再読み込みでは軌跡とタイマーはリセットされます。
+Firebase Hosting は `firebase.json` のリライトで各URLへの直接アクセスに対応します。
 
 ---
 
@@ -106,10 +135,10 @@ Vite の開発サーバーは SPA のフォールバックに対応していま�
 
 ```ts
 type TrailPoint = {
-  lat: number;
-  lng: number;
-  t: number; // Unix timestamp (ms)
-};
+  lat: number
+  lng: number
+  t: number // Unix timestamp (ms)
+}
 ```
 
 ### AI返り値
@@ -117,9 +146,10 @@ type TrailPoint = {
 ```ts
 type AIResult = {
   score: number;  // 0-100 単位: [%]
-  // guess: string;  // AIが判定した絵の内容
+  guess: string;  // AIが判定した絵の内容
   reason: string; // 採点理由 // 例: "りんごの形に近いが、色が赤くないため減点" <-- あくまで例であり、担当者がプロンプト調整して決定する
 };
+
 ```
 
 ### Firestore スキーマ
@@ -138,6 +168,7 @@ drawings/{drawingId}
 ## セットアップ
 
 ### 必要なもの
+
 - Node.js
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
@@ -332,20 +363,6 @@ src/
 - GPSは環境によって精度が大きく変わる（建物の影・地下・トンネルなど）
 - GPS 5桁（例：35.12345, 139.12345）で初期検証
 
-### Hugging Faceによる画像判定
-
-`.env.local` に以下を設定して `npm run dev` を起動します。
-
-```dotenv
-HF_TOKEN=hf_your_token
-HF_MODEL=Qwen/Qwen3.8-27B
-```
-
-トークンには Inference Providers の呼び出し権限が必要です。`VITE_` は付けません。
-画像入力とJSON出力に対応し、利用権限のあるモデルを指定してください。
-Hugging Faceのルーターを通じて推論プロバイダーを利用します。
-本番は `npm run start:api` でAPIを起動し、`/api` を転送してください。静的ホスティングだけでは判定APIは動きません。
-
 ### Groqによる画像判定
 
 `.env.local` に設定し、開発サーバーを再起動します。
@@ -357,3 +374,19 @@ GROQ_MODEL=qwen/qwen3.8-27b
 
 `GROQ_API_KEY` がある場合はGroqを優先します。`AI_PROVIDER` を指定すると明示的に切り替えられます。キーはサーバー専用で、`VITE_` を付けません。
 `/ai-test.html` で検証できます。画像対応とJSON出力の公式仕様: [Groq Vision](https://console.groq.com/docs/vision)。
+## ページ一覧とURL
+
+| URL           | 画面                                   |
+| ------------- | -------------------------------------- |
+| `/`           | ホーム                                 |
+| `/map`        | 3秒カウントダウン・Firestore作品ID生成 |
+| `/map/:id`    | 地図・GPS・15分タイマー                |
+| `/result/:id` | AI判定中 → 結果・保存                  |
+
+`:id` は `drawings/{drawingId}` のIDです。判定中、結果表示、エラー時の再試行は
+同じ `/result/:id` 内で行います。保存済み結果を開いた場合は再判定しません。
+採点結果と軌跡を同じ作品IDに保存し、ホームボタンは `/` へ戻ります。
+作品のPNGダウンロードも利用できます。
+Firebase Anonymous Auth と Firestore の読み書き権限が必要です。
+途中の再読み込みでは未保存の軌跡とタイマーは復元しません。
+Firebase Hosting は `firebase.json` のリライトで直接アクセスに対応します。
