@@ -8,6 +8,7 @@ import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
+import { MapView } from '../components/MapView'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -152,11 +153,13 @@ function DrawingResult({
 
         <section className="result-artwork" aria-label="あなたの作品">
           <h2>あなたの作品</h2>
-          <div className="result-canvas">
-            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
-            {trail.length < 2 && <p>記録された軌跡がありません</p>}
+          <div className="result-canvas" role="region" aria-label="歩行経路の地図">
+            {trail.length > 0 && <MapView trail={trail} interactive={false} />}
+            {trail.length === 0 && <p>記録された軌跡がありません</p>}
           </div>
-          <p className="result-artwork-caption">地図を含まないGPSの線画</p>
+          <div hidden aria-hidden="true">
+            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+          </div>
         </section>
 
         {generatedImage && (

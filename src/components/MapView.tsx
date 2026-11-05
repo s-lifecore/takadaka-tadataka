@@ -6,6 +6,7 @@ import type { Position, TrailPoint } from '../types'
 type Props = {
   trail: TrailPoint[]
   currentPosition?: Position | null
+  interactive?: boolean
 }
 
 // GPS取得前の表示位置。金沢工業大学 扇が丘キャンパス（世界測地系）。
@@ -19,7 +20,19 @@ function CenterOnPosition({ lat, lng }: Position) {
   return null
 }
 
-export function MapView({ trail, currentPosition }: Props) {
+function FitTrail({ trail }: { trail: TrailPoint[] }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!trail.length) return
+    map.fitBounds(
+      trail.map(({ lat, lng }) => [lat, lng] as [number, number]),
+      { padding: [24, 24], maxZoom: 17, animate: false },
+    )
+  }, [map, trail])
+  return null
+}
+
+export function MapView({ trail, currentPosition, interactive = true }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
   const center = currentPosition ?? trail[trail.length - 1] ?? INITIAL_CENTER
 
@@ -29,6 +42,12 @@ export function MapView({ trail, currentPosition }: Props) {
       zoom={17}
       className="w-full h-full"
       zoomControl={false}
+      dragging={interactive}
+      touchZoom={interactive}
+      scrollWheelZoom={interactive}
+      doubleClickZoom={interactive}
+      boxZoom={interactive}
+      keyboard={interactive}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -62,7 +81,11 @@ export function MapView({ trail, currentPosition }: Props) {
           <Tooltip>現在地</Tooltip>
         </CircleMarker>
       )}
-      <CenterOnPosition lat={center.lat} lng={center.lng} />
+      {interactive ? (
+        <CenterOnPosition lat={center.lat} lng={center.lng} />
+      ) : (
+        <FitTrail trail={trail} />
+      )}
     </MapContainer>
   )
 }
