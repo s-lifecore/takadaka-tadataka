@@ -2,15 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
-import { AdvancedImage } from '@cloudinary/react'
-import { Cloudinary } from '@cloudinary/url-gen'
-import { auto } from '@cloudinary/url-gen/actions/resize'
-import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { saveDrawing, signInAnon } from '../lib/firebase'
 import { judgeDrawing } from '../lib/huggingface'
-import { loadTrail } from '../lib/drawings'
 import type { AIResult, TrailPoint } from '../types'
 
 const MIN_JUDGEMENT_MS = 3000
@@ -116,39 +110,13 @@ function DrawingResult({
     [id, theme, result, savedResult, imagePublicId],
   )
 
-    if (started.current) return
-    started.current = true
-    setJudging(true)
-    setSaved(false)
-    setError(null)
-    const theme = 'りんご'
-    try {
-      const res = await judgeDrawing(base64, 'りんご')
-      setResult(res)
-      setJudging(false)
-      setSaving(true)
-      const user = await signInAnon()
-      const savedDrawing = await saveDrawing(user.uid, theme, base64, res)
-      setImagePublicId(savedDrawing.imagePublicId)
-      setSaved(true)
-    } catch (e: unknown) {
-      setError(String(e))
-    } finally {
-      setJudging(false)
-      setSaving(false)
-    }
-  }, [])
-
-  const cloudinary = new Cloudinary({
-    cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
-  })
-  const generatedImage = imagePublicId
-    ? cloudinary
-        .image(imagePublicId)
-        .format('auto')
-        .quality('auto')
-        .resize(auto().gravity(autoGravity()).width(500).height(500))
-    : null
+  const saveArtwork = () => {
+    if (!image) return
+    const link = document.createElement('a')
+    link.href = `data:image/png;base64,${image}`
+    link.download = `drawing-${id}.png`
+    link.click()
+  }
 
   if (judging) {
     return (
@@ -176,15 +144,29 @@ function DrawingResult({
           <p className="result-artwork-caption">地図を含まないGPSの線画</p>
         </section>
 
-      {result && (
-        <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
-          <div className="text-center">
-            <span className="text-4xl font-bold">{result.score.toFixed(5)}</span>
-            <span className="text-2xl text-gray-400">%</span>
+        {result && (
+          <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
+            <div className="text-center">
+              <span className="text-4xl font-bold">{result.score.toFixed(5)}</span>
+              <span className="text-2xl text-gray-400">%</span>
+            </div>
+            <p className="text-sm text-gray-500">{result.reason}</p>
           </div>
-          <p className="text-sm text-gray-500">{result.reason}</p>
-        </div>
-      )}
+        )}
+
+        {error && <p role="alert">{error}</p>}
+        {saved && <p role="status">採点結果を保存しました</p>}
+        {error && (
+          <button
+            type="button"
+            onClick={() => {
+              requested.current = false
+              if (image) void handleCanvasReady(image)
+            }}
+          >
+            もう一度試す
+          </button>
+        )}
 
         <footer className="result-actions">
           <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
