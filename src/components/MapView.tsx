@@ -1,21 +1,27 @@
-import { MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet'
+import { useEffect } from 'react'
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { TrailPoint } from '../types'
+import type { Position, TrailPoint } from '../types'
 
 type Props = {
   trail: TrailPoint[]
+  currentPosition?: Position | null
 }
 
-function CenterOnTrail({ trail }: { trail: TrailPoint[] }) {
+// GPS取得前の表示位置。金沢工業大学 扇が丘キャンパス（世界測地系）。
+const INITIAL_CENTER = { lat: 36.53042, lng: 136.62763 }
+
+function CenterOnPosition({ lat, lng }: Position) {
   const map = useMap()
-  const last = trail[trail.length - 1]
-  if (last) map.panTo([last.lat, last.lng])
+  useEffect(() => {
+    map.panTo([lat, lng])
+  }, [map, lat, lng])
   return null
 }
 
-export function MapView({ trail }: Props) {
+export function MapView({ trail, currentPosition }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
-  const center = trail[trail.length - 1] ?? { lat: 36.52836, lng: 136.62713 } // 金沢工業大学
+  const center = currentPosition ?? trail[trail.length - 1] ?? INITIAL_CENTER
 
   return (
     <MapContainer
@@ -28,8 +34,35 @@ export function MapView({ trail }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
-      {positions.length > 1 && <Polyline positions={positions} color="black" weight={4} />}
-      <CenterOnTrail trail={trail} />
+      {positions.length > 1 && <Polyline positions={positions} color="#d57c43" weight={5} />}
+      {positions.length > 0 && (
+        <>
+          <CircleMarker
+            center={positions[0]}
+            radius={7}
+            pathOptions={{ color: '#d57c43', fillColor: '#fffaf0', fillOpacity: 1, weight: 3 }}
+          >
+            <Tooltip>開始地点</Tooltip>
+          </CircleMarker>
+          <CircleMarker
+            center={positions[positions.length - 1]}
+            radius={7}
+            pathOptions={{ color: '#d57c43', fillColor: '#d57c43', fillOpacity: 1, weight: 3 }}
+          >
+            <Tooltip>軌跡の終了地点</Tooltip>
+          </CircleMarker>
+        </>
+      )}
+      {currentPosition && (
+        <CircleMarker
+          center={[currentPosition.lat, currentPosition.lng]}
+          radius={6}
+          pathOptions={{ color: '#38bdf8', fillColor: '#7dd3fc', fillOpacity: 0.7, weight: 2 }}
+        >
+          <Tooltip>現在地</Tooltip>
+        </CircleMarker>
+      )}
+      <CenterOnPosition lat={center.lat} lng={center.lng} />
     </MapContainer>
   )
 }

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { MapView } from '../components/MapView'
 import { Timer } from '../components/Timer'
-import { useGeolocation } from '../hooks/useGeolocation'
 import { useDeviceOrientation } from '../hooks/useDeviceOrientation'
+import { useGeolocation } from '../hooks/useGeolocation'
 import { useTimer } from '../hooks/useTimer'
 import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
 import type { TrailPoint } from '../types'
@@ -24,13 +24,12 @@ function StartCountdown() {
   useEffect(() => {
     startCountdown()
   }, [startCountdown])
-
   useEffect(() => {
     let active = true
     creation.current ??= createDrawing()
     creation.current.then(
-      (id) => {
-        if (active && countdownFinished) navigate(`/map/${id}`, { replace: true })
+      (drawingId) => {
+        if (active && countdownFinished) navigate(`/map/${drawingId}`, { replace: true })
       },
       () => {
         if (active)
@@ -64,22 +63,20 @@ function StartCountdown() {
 function LoadGame({ id }: { id: string }) {
   const [trail, setTrail] = useState<TrailPoint[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     let active = true
     loadTrail(id).then(
       (value) => {
         if (active) setTrail(value)
       },
-      (error: unknown) => {
-        if (active) setError(String(error))
+      (reason: unknown) => {
+        if (active) setError(String(reason))
       },
     )
     return () => {
       active = false
     }
   }, [id])
-
   if (error)
     return (
       <div className="p-6">
@@ -91,21 +88,61 @@ function LoadGame({ id }: { id: string }) {
   return <PlayingGame id={id} initialTrail={trail} />
 }
 
+function WalkingIcon({ name }: { name: 'compass' | 'clock' | 'pause' | 'play' | 'flag' }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {name === 'compass' && (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="m15 7-2 7-4 3 2-7Z" />
+        </>
+      )}
+      {name === 'clock' && (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 6v6l4 2" />
+        </>
+      )}
+      {name === 'pause' && (
+        <>
+          <rect x="5" y="4" width="4" height="16" rx="1" />
+          <rect x="15" y="4" width="4" height="16" rx="1" />
+        </>
+      )}
+      {name === 'play' && <path d="m7 4 13 8-13 8Z" />}
+      {name === 'flag' && <path d="M5 21V4c5-4 9 4 15 0v11c-6 4-10-4-15 0" />}
+    </svg>
+  )
+}
+
 function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoint[] }) {
   const navigate = useNavigate()
+  const [paused, setPaused] = useState(false)
   const {
     trail,
-    error,
+    currentPosition,
+    error: gpsError,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
     resume: resumeGPS,
   } = useGeolocation(initialTrail)
-  const { isLooking, status, isRequesting, requestPermission } = useDeviceOrientation()
-  useEffect(() => {
-    if (isLooking) pauseGPS()
-    else resumeGPS()
-  }, [isLooking, pauseGPS, resumeGPS])
+  const {
+    isLooking,
+    status: orientationStatus,
+    isRequesting,
+    requestPermission,
+  } = useDeviceOrientation()
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
@@ -116,14 +153,20 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     startTimer()
     return () => stopGPS()
   }, [startGPS, startTimer, stopGPS])
+  useEffect(() => {
+    if (isLooking) pauseGPS()
+    else if (!paused && !saving) resumeGPS()
+  }, [isLooking, paused, saving, pauseGPS, resumeGPS])
 
   const handleFinish = useCallback(async () => {
     if (finishing.current) return
     finishing.current = true
     setSaving(true)
     setSaveError(null)
+    pauseGPS()
     stopGPS()
     stopTimer()
+    setPaused(true)
     try {
       await saveTrail(id, trail)
       navigate(`/result/${id}`)
@@ -134,76 +177,114 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       finishing.current = false
       setSaving(false)
     }
-  }, [id, navigate, stopGPS, stopTimer, trail])
-
+  }, [id, navigate, pauseGPS, stopGPS, stopTimer, trail])
   useEffect(() => {
-    if (expired) handleFinish()
+    if (expired) void handleFinish()
   }, [expired, handleFinish])
 
+  const togglePause = useCallback(() => {
+    if (paused) {
+      if (!isLooking) resumeGPS()
+      startGPS()
+      startTimer()
+    } else {
+      pauseGPS()
+      stopGPS()
+      stopTimer()
+    }
+    setPaused((value) => !value)
+  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer])
+
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex items-center justify-between px-4 py-3 bg-white shadow z-10">
-        <span className="text-lg font-bold">🍎 りんご</span>
-        <Timer remaining={remaining} />
-        <button
-          onClick={handleFinish}
-          disabled={saving}
-          className="text-sm text-gray-400 underline"
-        >
-          {saving ? '保存中…' : '完了'}
-        </button>
-      </div>
-
-      {error && <div className="bg-red-100 text-red-700 text-sm px-4 py-2">{error}</div>}
-      {saveError && (
-        <div role="alert" className="bg-red-100 text-red-700 text-sm px-4 py-2">
-          {saveError}
+    <main className="walking-page">
+      <div className="walking-content">
+        <header className="walking-header">
+          <h1>{paused || isLooking ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
+          <WalkingIcon name="compass" />
+        </header>
+        <div className="walking-summary">
+          <div className="walking-theme">りんご</div>
+          <div className="walking-time" aria-label="残り時間">
+            <WalkingIcon name="clock" />
+            <Timer remaining={remaining} />
+          </div>
         </div>
-      )}
-
-      {(status === 'permission-required' || status === 'denied' || status === 'error') && (
-        <div className="bg-amber-100 text-amber-900 text-sm px-4 py-2" role="status">
-          <p>
-            {status === 'denied'
-              ? '傾きセンサーの利用が拒否されています。ブラウザの設定で許可してください。'
-              : status === 'error'
-                ? '傾きセンサーを有効にできませんでした。もう一度お試しください。'
-                : '歩きスマホ警告のため、端末の傾きセンサーの利用を許可してください。'}
-          </p>
-          <button
-            onClick={requestPermission}
-            disabled={isRequesting}
-            className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
-          >
-            {isRequesting ? '確認中…' : '傾きセンサーを有効にする'}
-          </button>
-        </div>
-      )}
-      {status === 'unsupported' && (
-        <div className="bg-amber-100 text-amber-900 text-sm px-4 py-2" role="status">
-          この環境では歩きスマホ検知を利用できません。HTTPS対応のスマートフォンでご利用ください。
-        </div>
-      )}
-
-      <div className="flex-1 relative">
-        <MapView trail={trail} />
-        {isLooking && (
-          <div
-            className="absolute inset-0 bg-black/70 flex items-center justify-center z-[1000] p-6"
-            role="alert"
-          >
-            <div className="text-white text-center">
-              <p className="text-xl font-bold">前を向いて歩いてください</p>
-              <p className="mt-2 text-sm">軌跡の記録を一時停止しています</p>
-              <p className="mt-1 text-sm">端末を傾けると記録が再開します</p>
-            </div>
+        {(orientationStatus === 'permission-required' ||
+          orientationStatus === 'denied' ||
+          orientationStatus === 'error') && (
+          <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
+            <p>
+              {orientationStatus === 'denied'
+                ? '傾きセンサーの利用が拒否されています。ブラウザの設定で許可してください。'
+                : orientationStatus === 'error'
+                  ? '傾きセンサーを有効にできませんでした。もう一度お試しください。'
+                  : '歩きスマホ警告のため、端末の傾きセンサーの利用を許可してください。'}
+            </p>
+            <button
+              onClick={requestPermission}
+              disabled={isRequesting}
+              className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
+            >
+              {isRequesting ? '確認中…' : '傾きセンサーを有効にする'}
+            </button>
           </div>
         )}
-
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
-          軌跡: {trail.length} 点
-        </div>
+        {orientationStatus === 'unsupported' && (
+          <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
+            この環境では歩きスマホ検知を利用できません。HTTPS対応のスマートフォンでご利用ください。
+          </div>
+        )}
+        <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
+          <MapView trail={trail} currentPosition={currentPosition} />
+          {paused && !isLooking && <div className="walking-paused">一時停止中</div>}
+          {isLooking && (
+            <div className="walking-warning" role="alert">
+              <div>
+                <p>前を向いて歩いてください。</p>
+                <p>軌跡の記録を一時停止しています。</p>
+                <p>
+                  {paused
+                    ? '端末を傾けてから「再開する」を押してください。'
+                    : '端末を傾けると記録が再開します。'}
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+        {gpsError && (
+          <p className="walking-error" role="alert">
+            位置情報を取得できません：{gpsError}
+          </p>
+        )}
+        {saveError && (
+          <p className="walking-error" role="alert">
+            {saveError}
+          </p>
+        )}
+        <footer className="walking-footer">
+          <div className="walking-actions">
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-pressed={paused}
+              disabled={saving || expired}
+            >
+              <WalkingIcon name={paused ? 'play' : 'pause'} />
+              {paused ? '再開する' : '一時停止'}
+            </button>
+            <button
+              type="button"
+              className="walking-finish"
+              onClick={() => void handleFinish()}
+              disabled={saving}
+            >
+              <WalkingIcon name="flag" />
+              {saving ? '保存中…' : '終了する'}
+            </button>
+          </div>
+          <p>操作するときは必ず立ち止まってね</p>
+        </footer>
       </div>
-    </div>
+    </main>
   )
 }

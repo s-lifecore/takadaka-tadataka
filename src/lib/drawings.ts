@@ -1,4 +1,5 @@
-import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import dayjs from 'dayjs'
 import { auth, db, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -22,7 +23,7 @@ export async function createDrawing() {
     uid: user.uid,
     theme: 'りんご',
     trail: [],
-    createdAt: serverTimestamp(),
+    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
   })
   return drawing.id
 }
@@ -48,6 +49,7 @@ export async function loadDrawing(id: string) {
   if (data.uid !== user.uid) throw new Error('この作品は開けません。')
   return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
 }
+
 export async function saveResult(id: string, result: AIResult, imagePublicId: string) {
   await ensureUser()
   await updateDoc(doc(db, 'drawings', id), { result, imagePublicId })
