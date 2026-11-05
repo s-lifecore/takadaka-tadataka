@@ -1,12 +1,12 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { createScoringMiddleware } from './server/scoring.mjs'
+import { createScoringMiddleware, scoringOptionsFromEnv } from './server/scoring.mjs'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '')
   const { NGROK_HOST } = env
-  const scoringOptions = { apiKey: process.env.HF_TOKEN || env.HF_TOKEN, model: process.env.HF_MODEL || env.HF_MODEL }
+  const scoringOptions = scoringOptionsFromEnv({ ...env, ...process.env })
 
   return {
     resolve: {
@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       {
-        name: 'huggingface-scoring-api',
+        name: 'ai-scoring-api',
         configureServer(server) {
           server.middlewares.use(createScoringMiddleware(scoringOptions))
         },

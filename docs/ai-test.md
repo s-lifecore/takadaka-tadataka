@@ -1,6 +1,6 @@
 # AI判定テスト
 
-1. `.env.local` に `HF_TOKEN` と `HF_MODEL=Qwen/Qwen3.8-27B` を記入する（秘密情報はコミットしない）。キーに `VITE_` を付けない。Hugging FaceのAPI利用残高と画像対応モデルへのアクセス権を確認する。
+1. `.env.local` に `GROQ_API_KEY` と `GROQ_MODEL=qwen/qwen3.8-27b`（Hugging Faceを使う場合は `AI_PROVIDER=huggingface`、`HF_TOKEN`、`HF_MODEL=Qwen/Qwen3.8-27B`） を記入する（秘密情報はコミットしない）。キーに `VITE_` を付けない。利用するプロバイダーのAPI利用枠と画像対応モデルへのアクセス権を確認する。
 2. `npm run dev` を実行する。
 3. 表示されたポートの `/ai-test.html` を開く。
 4. `public/ai-test-samples/` のPNGを選択し、「AIで採点する」を押す。
@@ -21,7 +21,7 @@
 
 仮の合格基準：似た絵ほど高得点、5回の最大差がおおむね10点以内、画像にある特徴を理由にする、0〜100の整数が返る。
 
-`server/ai-prompt.mjs`（`src/lib/aiPrompt.ts` からも再公開） を一項目ずつ変更し、同じ画像で再検証する。モデル名（HF_MODEL、未指定時Qwen/Qwen3.8-27B）、プロンプトの版、実施日も記録する。temperature=0でも再現性は保証されない。
+`server/ai-prompt.mjs`（`src/lib/aiPrompt.ts` からも再公開） を一項目ずつ変更し、同じ画像で再検証する。プロバイダーとモデル名（GroqはGROQ_MODEL、未指定時qwen/qwen3.8-27b。Hugging FaceはHF_MODEL、未指定時Qwen/Qwen3.8-27B）、プロンプトの版、実施日も記録する。temperature=0でも再現性は保証されない。
 
 エラーは画面とブラウザのConsoleで確認する。認証・利用権限やモデル設定のエラーはバックエンド担当と確認する。429は利用枠を確認する。503の混雑・通信失敗は最大2回再試行し、それでも失敗した場合は時間をおく。キー未設定の場合は設定してdevサーバーを再起動する。通信失敗は0点として記録しない。
 

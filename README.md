@@ -174,10 +174,10 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_CLOUDINARY_CLOUD_NAME=...
 VITE_CLOUDINARY_UPLOAD_PRESET=...
-HF_TOKEN=...
+GROQ_API_KEY=...
 ```
 
-`HF_TOKEN` はHugging Faceで発行したAPIキーです。画像対応モデルへのアクセス権とAPIの利用残高も確認してください。秘密キーには `VITE_` を付けません。Firebase設定は認証・保存用として引き続き使用できますが、採点には不要です。
+`GROQ_API_KEY` はGroqで発行したAPIキーです。Hugging Faceを使う場合は `AI_PROVIDER=huggingface` と `HF_TOKEN` を設定します。画像対応モデルへのアクセス権とAPIの利用残高も確認してください。秘密キーには `VITE_` を付けません。Firebase設定は認証・保存用として引き続き使用できますが、採点には不要です。
 
 ### 開発サーバー起動
 
@@ -286,11 +286,11 @@ ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで
 npm run start:api
 ```
 
-環境変数は `HF_TOKEN`、`HF_MODEL`、必要に応じて `PORT`（既定3001）、`HOST`（既定127.0.0.1）です。本番ではデプロイ先のシークレット設定を使用してください。コンテナでは必要に応じて `HOST=0.0.0.0` にします。
+環境変数は `GROQ_API_KEY`、`GROQ_MODEL`（既定 `qwen/qwen3.8-27b`）、`AI_PROVIDER`（`groq` / `huggingface`）、Hugging Face用の `HF_TOKEN`、`HF_MODEL`、必要に応じて `PORT`（既定3001）、`HOST`（既定127.0.0.1）です。本番ではデプロイ先のシークレット設定を使用してください。コンテナでは必要に応じて `HOST=0.0.0.0` にします。
 
 Firebase Hosting等から公開する場合は、APIをCloud Run等に配置し、同じオリジンの `/api/judge-drawing` をAPIへ転送してください。SPAへの書き換えよりAPI転送を優先します。静的ファイルをアップロードするだけでは採点できません。公開前にデプロイ先で認証・レート制限を設定してください。現時点のAPIは開発・チーム検証用で、利用者認証は実装していません。
 
-Hugging Faceの画像入力を使用し、採点結果は `{ score, reason }` のままです。画像は採点のためHugging Faceに送信されます。最大3MBのPNGを受け付け、一時的な5xxと通信失敗だけ最大2回再試行します。429、認証失敗、不正な回答は再試行しません。
+GroqまたはHugging Faceの画像入力を使用し、採点結果は `{ score, reason }` のままです。画像は採点のため選択されたプロバイダーに送信されます。最大3MBのPNGを受け付け、一時的な5xxと通信失敗だけ最大2回再試行します。429、認証失敗、不正な回答は再試行しません。
 
 ```bash
 npm run test:ai
@@ -345,3 +345,15 @@ HF_MODEL=Qwen/Qwen3.8-27B
 画像入力とJSON出力に対応し、利用権限のあるモデルを指定してください。
 Hugging Faceのルーターを通じて推論プロバイダーを利用します。
 本番は `npm run start:api` でAPIを起動し、`/api` を転送してください。静的ホスティングだけでは判定APIは動きません。
+
+### Groqによる画像判定
+
+`.env.local` に設定し、開発サーバーを再起動します。
+
+```dotenv
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=qwen/qwen3.8-27b
+```
+
+`GROQ_API_KEY` がある場合はGroqを優先します。`AI_PROVIDER` を指定すると明示的に切り替えられます。キーはサーバー専用で、`VITE_` を付けません。
+`/ai-test.html` で検証できます。画像対応とJSON出力の公式仕様: [Groq Vision](https://console.groq.com/docs/vision)。

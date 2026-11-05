@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
-import { createScoringMiddleware } from './scoring.mjs'
+import { createScoringMiddleware, scoringOptionsFromEnv } from './scoring.mjs'
 
-const handle = createScoringMiddleware({ apiKey: process.env.HF_TOKEN, model: process.env.HF_MODEL })
+const handle = createScoringMiddleware(scoringOptionsFromEnv(process.env))
 const server = createServer((req, res) => {
   void handle(req, res, () => { res.statusCode = 404; res.end('Not Found') })
 })

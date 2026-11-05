@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
-import { createScoringMiddleware, scoreDrawing } from './scoring.mjs'
+import { createScoringMiddleware, scoreDrawing, scoringOptionsFromEnv } from './scoring.mjs'
 
 const imageBase64 = (await readFile(new URL('../public/ai-test-samples/apple_good.png', import.meta.url))).toString('base64')
 const input = { theme: 'りんご', imageBase64 }
@@ -98,4 +98,38 @@ test('HTTPエンドポイントの成功・エラー・ルーティング', asyn
   assert.equal((await fetch(url, { method: 'POST', headers, body: '{' })).status, 400)
   assert.equal((await fetch(url, { method: 'POST', headers: { ...headers, 'Sec-Fetch-Site': 'cross-site' }, body: '{}' })).status, 403)
   assert.equal((await fetch(url + '/missing')).status, 404)
+})
+
+test('環境変数でGroqを優先し、明示指定とHFの既存設定も使える', () => {
+  const env = { GROQ_API_KEY: 'groq-key', HF_TOKEN: 'hf-key' }
+  assert.deepEqual(scoringOptionsFromEnv(env), { provider: 'groq', apiKey: 'groq-key', model: undefined })
+  assert.equal(scoringOptionsFromEnv({ ...env, AI_PROVIDER: 'huggingface' }).apiKey, 'hf-key')
+  assert.equal(scoringOptionsFromEnv({ HF_TOKEN: 'hf-key' }).provider, 'huggingface')
+})
+
+test('Groqに画像とJSON指定を送り、点数と理由を返す', async () => {
+  assert.deepEqual(await scoreDrawing(input, {
+    provider: 'groq', apiKey: 'groq-secret',
+    fetchImpl: async (url, options) => {
+      assert.equal(url, 'https://api.groq.com/openai/v1/chat/completions')
+      assert.equal(options.headers.Authorization, 'Bearer groq-secret')
+      const body = JSON.parse(options.body)
+      assert.equal(body.model, 'qwen/qwen3.8-27b')
+      assert.equal(body.max_completion_tokens, 1024)
+      assert.equal(body.response_format.type, 'json_object')
+      assert.equal(body.messages[1].content[1].image_url.url, `data:image/png;base64,${imageBase64}`)
+      return success(valid)
+    },
+  }), valid)
+})
+
+test('Groqの設定・認証・利用上限エラーを表示する', async () => {
+  await assert.rejects(scoreDrawing(input, { provider: 'unknown', apiKey: 'test' }), /AI_PROVIDER/)
+  await assert.rejects(scoreDrawing(input, { provider: 'groq' }), /GROQ_API_KEY/)
+  for (const status of [401, 429]) {
+    await assert.rejects(scoreDrawing(input, {
+      provider: 'groq', apiKey: 'test',
+      fetchImpl: async () => new Response('', { status }),
+    }), err => err.message.includes('Groq') && err.status === (status === 429 ? 429 : 502))
+  }
 })
