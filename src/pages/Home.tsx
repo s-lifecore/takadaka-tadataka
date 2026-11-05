@@ -112,7 +112,7 @@ export function Home() {
       <section className="home-adventure">
         <h2>どの冒険に出かける？</h2>
         <p>あしあとから、絵を生みだそう</p>
-        <button className="home-solo" onClick={() => navigate('/map')}>
+        <button className="home-solo" onClick={() => navigate('/playalone')}>
           <Icon kind="steps" />
           <span>
             <strong>ひとりで遊ぶ</strong>
