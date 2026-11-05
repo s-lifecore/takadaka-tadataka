@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Ready } from './Ready'
 import { MapView } from '../components/MapView'
 import { Timer } from '../components/Timer'
 import { useDeviceOrientation } from '../hooks/useDeviceOrientation'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { useTimer } from '../hooks/useTimer'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
 import type { TrailPoint } from '../types'
 
@@ -41,23 +43,16 @@ function StartCountdown() {
     }
   }, [navigate, countdownFinished])
 
-  return (
-    <div className="flex flex-col items-center justify-center h-screen gap-6 bg-white">
-      <p className="text-lg font-bold">🍎 りんご</p>
-      <div role="status" aria-live="assertive" aria-atomic="true" className="text-center">
-        <p className="text-gray-600 mb-4">ゲーム開始まで</p>
-        {error ? (
-          <p role="alert">{error}</p>
-        ) : (
-          <p className="text-8xl font-mono font-bold tabular-nums">{remaining || '準備中…'}</p>
-        )}
-      </div>
-      <p className="text-sm text-gray-500">画面を見ながら歩かないでください</p>
-      <Link to="/" className="underline">
-        ホームへ戻る
-      </Link>
-    </div>
-  )
+  if (error) {
+    return (
+      <main className="ready-page flex flex-col items-center justify-center gap-6">
+        <p role="alert">{error}</p>
+        <Link to="/">ホームへ戻る</Link>
+      </main>
+    )
+  }
+
+  return <Ready count={remaining} onCancel={() => navigate('/')} />
 }
 
 function LoadGame({ id }: { id: string }) {
@@ -144,6 +139,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     requestPermission,
   } = useDeviceOrientation()
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
+  const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -151,8 +147,12 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   useEffect(() => {
     startGPS()
     startTimer()
-    return () => stopGPS()
-  }, [startGPS, startTimer, stopGPS])
+    acquire()
+    return () => {
+      stopGPS()
+      release()
+    }
+  }, [startGPS, startTimer, stopGPS, acquire, release])
   useEffect(() => {
     if (isLooking) pauseGPS()
     else if (!paused && !saving) resumeGPS()
@@ -167,6 +167,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     stopGPS()
     stopTimer()
     setPaused(true)
+    release()
     try {
       await saveTrail(id, trail)
       navigate(`/result/${id}`)
@@ -177,7 +178,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       finishing.current = false
       setSaving(false)
     }
-  }, [id, navigate, pauseGPS, stopGPS, stopTimer, trail])
+  }, [id, navigate, pauseGPS, stopGPS, stopTimer, trail, release])
   useEffect(() => {
     if (expired) void handleFinish()
   }, [expired, handleFinish])
@@ -187,13 +188,14 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       if (!isLooking) resumeGPS()
       startGPS()
       startTimer()
+      acquire()
     } else {
       pauseGPS()
       stopGPS()
       stopTimer()
     }
     setPaused((value) => !value)
-  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer])
+  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer, acquire])
 
   return (
     <main className="walking-page">
@@ -209,6 +211,25 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             <Timer remaining={remaining} />
           </div>
         </div>
+        {!saving && !saveError && !expired && (
+          <div className="bg-amber-50 text-amber-950 text-sm px-4 py-2" role="status">
+            {wakeLockStatus === 'active' ? (
+              <p>自動消灯の防止：有効</p>
+            ) : wakeLockStatus === 'requesting' || wakeLockStatus === 'idle' ? (
+              <p>自動消灯の防止：確認中…</p>
+            ) : (
+              <>
+                <p>{wakeLockError ?? '自動消灯の防止が解除されました。'}</p>
+                <p>省電力モードやブラウザの設定を確認してください。</p>
+                {wakeLockStatus !== 'unavailable' && (
+                  <button onClick={acquire} className="mt-1 underline">
+                    自動消灯の防止を再試行
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {(orientationStatus === 'permission-required' ||
           orientationStatus === 'denied' ||
           orientationStatus === 'error') && (
