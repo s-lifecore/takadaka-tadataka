@@ -42,15 +42,12 @@ export async function saveTrail(id: string, trail: TrailPoint[]) {
 }
 
 export async function loadDrawing(id: string) {
-  await ensureUser()
+  const user = await ensureUser()
   const snapshot = await getDoc(doc(db, 'drawings', id))
   if (!snapshot.exists()) throw new Error('作品が見つかりません。')
-  return snapshot.data() as {
-    theme: string
-    trail: TrailPoint[]
-    result?: AIResult
-    imagePublicId?: string
-  }
+  const data = snapshot.data()
+  if (data.uid !== user.uid) throw new Error('この作品は開けません。')
+  return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
 }
 
 export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
