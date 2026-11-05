@@ -3,10 +3,6 @@ import { latLng } from 'leaflet'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
-import { AdvancedImage } from '@cloudinary/react'
-import { Cloudinary } from '@cloudinary/url-gen'
-import { auto } from '@cloudinary/url-gen/actions/resize'
-import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { MapView } from '../components/MapView'
@@ -136,17 +132,6 @@ function DrawingResult({
     link.click()
   }
 
-  const cloudinary = new Cloudinary({
-    cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
-  })
-  const generatedImage = imagePublicId
-    ? cloudinary
-        .image(imagePublicId)
-        .format('auto')
-        .quality('auto')
-        .resize(auto().gravity(autoGravity()).width(500).height(500))
-    : null
-
   if (judging) {
     return (
       <Judgement>
@@ -185,11 +170,6 @@ function DrawingResult({
           </div>
         </section>
 
-        {generatedImage && (
-          <div className="w-64 h-64 mx-auto mt-4 border-2 border-gray-200 rounded-xl overflow-hidden">
-            <AdvancedImage cldImg={generatedImage} />
-          </div>
-        )}
         <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
           <h2>AIの採点結果</h2>
           {result && saved ? (
