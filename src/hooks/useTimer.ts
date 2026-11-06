@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export type TimerSnapshot = { remainingMs: number; endAt: number | null }
+export type TimerSnapshot = { remainingMs: number; endAt: number | null; paused?: boolean }
 
 export function useTimer(initialSeconds: number, initialSnapshot?: TimerSnapshot) {
   const initialMs = initialSnapshot

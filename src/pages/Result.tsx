@@ -5,8 +5,8 @@ import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
+import { judgeDrawing } from '../lib/groq'
 import { MapView } from '../components/MapView'
-import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
 const MIN_JUDGEMENT_MS = 3000
@@ -98,7 +98,7 @@ function DrawingResult({
       if (requested.current) return
       requested.current = true
       setImage(base64)
-      if (savedResult) return
+      if (savedResult && savedImagePublicId) return
       setError(null)
       setJudging(true)
       const minimumDisplay = new Promise<void>((resolve) => {
@@ -121,14 +121,14 @@ function DrawingResult({
         setJudging(false)
       }
     },
-    [id, theme, result, savedResult, imagePublicId],
+    [id, theme, result, savedResult, savedImagePublicId, imagePublicId],
   )
 
-  function saveArtwork() {
+  const saveArtwork = () => {
     if (!image) return
     const link = document.createElement('a')
     link.href = `data:image/png;base64,${image}`
-    link.download = `takadaka-tadataka-${new Date().toISOString().slice(0, 10)}.png`
+    link.download = `drawing-${id}.png`
     link.click()
   }
 
@@ -159,7 +159,7 @@ function DrawingResult({
           </div>
           {trail.length > 0 ? (
             <div className="result-route-map" role="region" aria-label="歩行経路の地図">
-              <MapView trail={trail} fitTrail />
+              <MapView trail={trail} fitTrail interactive={false} />
             </div>
           ) : (
             <p className="result-message">記録された歩行経路がありません。</p>
@@ -178,7 +178,6 @@ function DrawingResult({
                 {result.score}
                 <span>点</span>
               </p>
-              <p className="result-guess">AIの予想：{result.guess || '判定なし'}</p>
               <p className="result-reason">{result.reason}</p>
             </>
           ) : (
