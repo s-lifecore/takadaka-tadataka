@@ -7,7 +7,6 @@ import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/huggingface'
 import { MapView } from '../components/MapView'
-import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
 
 const MIN_JUDGEMENT_MS = 3000
@@ -202,7 +201,6 @@ function DrawingResult({
                 {result.score}
                 <span>点</span>
               </p>
-              <p className="result-guess">AIの予想：{result.guess || '判定なし'}</p>
               <p className="result-reason">{result.reason}</p>
             </>
           ) : (
