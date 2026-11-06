@@ -48,6 +48,7 @@ export function useGeolocation(initialTrail: TrailPoint[] = []) {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           t: Date.now(),
+          accuracy: pos.coords.accuracy,
         }
         setCurrentPosition(point)
         if (isPausedRef.current) return

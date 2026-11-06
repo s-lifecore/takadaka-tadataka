@@ -1,6 +1,8 @@
-import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { FirebaseError } from 'firebase/app'
+import { httpsCallable } from 'firebase/functions'
 import dayjs from 'dayjs'
-import { auth, db, signInAnon } from './firebase'
+import { auth, db, functions, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
 
 let authentication: Promise<unknown> | null = null
@@ -24,6 +26,7 @@ export async function createDrawing() {
     theme: 'りんご',
     trail: [],
     createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
+    serverCreatedAt: serverTimestamp(),
   })
   return drawing.id
 }
@@ -37,7 +40,26 @@ export async function loadDrawing(id: string) {
 }
 export async function saveTrail(id: string, trail: TrailPoint[]) {
   await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { trail })
+  try {
+    await httpsCallable<{ id: string; trail: TrailPoint[] }, { saved: boolean }>(
+      functions,
+      'submitTrail',
+    )({ id, trail })
+  } catch (error) {
+    if (
+      error instanceof FirebaseError &&
+      [
+        'functions/invalid-argument',
+        'functions/failed-precondition',
+        'functions/permission-denied',
+        'functions/not-found',
+      ].includes(error.code)
+    )
+      throw new Error(error.message)
+    throw new Error(
+      '軌跡を保存できませんでした。通信環境を確認して、完了ボタンで再試行してください。',
+    )
+  }
 }
 export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
   await ensureUser()

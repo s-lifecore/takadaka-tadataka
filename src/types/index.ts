@@ -5,6 +5,7 @@ export type Position = {
 
 export type TrailPoint = Position & {
   t: number // Unix timestamp (ms)
+  accuracy?: number // GPSの測位誤差(m)。新規保存時はサーバーで必須として検証する。
 }
 
 export type AIResult = {

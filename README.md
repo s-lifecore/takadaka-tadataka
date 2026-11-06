@@ -161,6 +161,11 @@ drawings/{drawingId}
   imagePublicId: string  // Cloudinary public ID
   result:   AIResult
   createdAt: string        // ISO 8601形式のAsia/Tokyo時刻（+09:00）
+  serverCreatedAt: Timestamp // サーバーが確定した開始時刻（クライアント変更不可）
+  trail: Array<{ lat, lng, t, accuracy }> // submitTrail Callableで検証して保存
+  trailValidationVersion: 1 // 以下の検証フィールドもサーバー専用
+  trailValidatedAt: Timestamp
+  trailHash: string
 ```
 
 ---
@@ -310,6 +315,57 @@ src/
 
 - GPSは環境によって精度が大きく変わる（建物の影・地下・トンネルなど）
 - GPS 5桁（例：35.12345, 139.12345）で初期検証
+
+### 軌跡のサーバー検証（#63）
+
+`saveTrail()` は東京リージョン（`asia-northeast1`）のCallable Function
+`submitTrail` に送信します。Firebase Authで本人の作品であることを確認し、全点の
+緯度・経度・整数の時刻・精度（0〜30m）、点間距離3m以上、時刻の単調増加、
+各区間の速度15km/h以下、最初と最後の点の間隔900秒以内、点数1800以下を検証します。
+時刻はサーバーで確定した開始時刻以降・受信時刻以前であることも確認します
+（端末時計のずれは前後5秒まで許容）。900秒は軌跡の実時刻の差であり、
+途中の一時停止時間も含みます。
+
+Firestore Rulesは空の軌跡での作品作成だけを許可し、軌跡・開始時刻・検証フィールドの
+直接更新を禁止します。検証後の軌跡は変更できません。同じ軌跡の再送だけは成功扱いにし、
+通信エラー時の再試行に対応します。既存作品の表示・結果保存は維持しますが、
+`serverCreatedAt`がない旧形式の作品や精度情報のない軌跡を再提出する場合は、
+新しくゲームを開始する必要があります。
+
+新しいサーバーコードは`functions/src/`、検証テストは`functions/test/`に置きます。
+フロント側のURLと画面遷移は変更しません。
+
+```bash
+npm ci
+npm ci --prefix functions
+npm run test:trail
+# Java 21以上が必要。デモ用エミュレータだけに接続する。
+npm run test:rules
+```
+
+Functions用の依存関係はフロント側と別のpackage-lockで固定します。
+`Trail validation` workflowがサーバーのビルド・検証テストとルールのテストを実行します。
+ルールテストは直接書き込みの拒否、他人の作品へのアクセス拒否、既存作品の互換性を、
+Callableの結合テストは所有者確認、不正データの拒否、同一データの再送、同時送信を確認します。
+
+利用環境ではFunctions・Rules・フロントを合わせて反映する必要があります。
+Cloud FunctionsをデプロイできるFirebaseプロジェクト（Blazeプラン）を使用し、
+FunctionsとRulesを反映した後にフロントをデプロイしてください。
+
+```bash
+npm run build:functions
+firebase deploy --only functions,firestore:rules --project <対象のFirebaseプロジェクトID>
+# 続いて既存のHosting手順で同じプロジェクトへフロントを反映
+```
+
+ルール反映後は旧フロントからの軌跡直接保存が拒否されます。開いたままの旧画面は
+再読み込みし、新しくゲームを開始してください。この変更の実装だけでは本番へ反映されません。
+
+**対策の限界:** これはデータの整合性検証です。速度・精度・時刻を含めて条件を満たす偽データや、
+OS側の位置情報偽装が実際の歩行でないことを証明するものではありません。
+GPS精度も端末からの申告値です。App Checkは未導入で、現在のAI採点結果もクライアントから
+保存する構成のままです。実歩行の証明やスコア改ざん対策には、App Checkと
+サーバー側での採点・継続的な測位受信などの追加設計が必要です。
 
 ## ページ一覧とURL
 
