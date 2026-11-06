@@ -46,7 +46,9 @@ export function useGeolocation(
     }
   }, [angleBlocked, motionDetected])
   const [error, setError] = useState<string | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
   const watchIdRef = useRef<number | null>(null)
+  const watchGenerationRef = useRef(0)
   const lastRef = useRef<TrailPoint | null>(initialTrail[initialTrail.length - 1] ?? null)
   const isPausedRef = useRef(false)
   const stationaryAnchorRef = useRef<TrailPoint | null>(null)
@@ -68,14 +70,17 @@ export function useGeolocation(
     if (watchIdRef.current !== null) return
     setError(null)
     if (!navigator.geolocation) {
+      setIsLocating(false)
       setError('このブラウザは位置情報に対応していません')
       return
     }
+    setIsLocating(true)
+    const generation = ++watchGenerationRef.current
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
         setError(null)
-        if (watchIdRef.current === null) return
-        if (isPausedRef.current) return
+        setIsLocating(false)
         const point: TrailPoint = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -176,7 +181,8 @@ export function useGeolocation(
         setTrail((prev) => [...prev, point])
       },
       (err) => {
-        if (watchIdRef.current === null) return
+        if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
+        setIsLocating(false)
         stationaryAnchorRef.current = null
         stationarySampleCountRef.current = 0
         movementSamplesRef.current = []
@@ -200,6 +206,8 @@ export function useGeolocation(
     lastSampleTimeRef.current = null
     setIsStationary(false)
     setIsMoving(false)
+    watchGenerationRef.current += 1
+    setIsLocating(false)
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
@@ -212,6 +220,7 @@ export function useGeolocation(
     isStationary: isStationary && !motionDetected,
     isMoving: isMoving || motionDetected,
     error,
+    isLocating,
     start,
     stop,
     pause,

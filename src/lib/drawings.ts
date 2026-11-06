@@ -3,9 +3,8 @@ import dayjs from 'dayjs'
 import { auth, db, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
 
-let authentication: ReturnType<typeof signInAnon> | null = null
-
-function ensureUser() {
+let authentication: Promise<unknown> | null = null
+async function ensureUser() {
   authentication ??= auth
     .authStateReady()
     .then(() => auth.currentUser ?? signInAnon())
@@ -13,9 +12,10 @@ function ensureUser() {
       authentication = null
       throw error
     })
-  return authentication
+  await authentication
+  if (!auth.currentUser) throw new Error('認証できませんでした。')
+  return auth.currentUser
 }
-
 export async function createDrawing() {
   const user = await ensureUser()
   const drawing = doc(collection(db, 'drawings'))
@@ -27,20 +27,6 @@ export async function createDrawing() {
   })
   return drawing.id
 }
-
-export async function loadTrail(id: string): Promise<TrailPoint[]> {
-  await ensureUser()
-  const drawing = await getDoc(doc(db, 'drawings', id))
-  if (!drawing.exists())
-    throw new Error('作品が見つかりません。ホームからゲームを開始してください。')
-  return (drawing.data().trail ?? []) as TrailPoint[]
-}
-
-export async function saveTrail(id: string, trail: TrailPoint[]) {
-  await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { trail })
-}
-
 export async function loadDrawing(id: string) {
   const user = await ensureUser()
   const snapshot = await getDoc(doc(db, 'drawings', id))
@@ -49,8 +35,15 @@ export async function loadDrawing(id: string) {
   if (data.uid !== user.uid) throw new Error('この作品は開けません。')
   return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
 }
-
-export async function saveResult(id: string, result: AIResult, imagePublicId: string) {
+export async function saveTrail(id: string, trail: TrailPoint[]) {
   await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { result, imagePublicId })
+  await updateDoc(doc(db, 'drawings', id), { trail })
+}
+export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
+  await ensureUser()
+  await updateDoc(doc(db, 'drawings', id), { result, ...(imagePublicId ? { imagePublicId } : {}) })
+}
+
+export async function loadTrail(id: string): Promise<TrailPoint[]> {
+  return (await loadDrawing(id)).trail ?? []
 }

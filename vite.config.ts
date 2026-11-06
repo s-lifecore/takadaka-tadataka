@@ -7,7 +7,7 @@ export default defineConfig({
     extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
   },
   server: {
-    allowedHosts: ['chef-unicycle-nanometer.ngrok-free.dev'],
+    allowedHosts: ['.ngrok-free.dev'],
   },
   plugins: [
     react(),

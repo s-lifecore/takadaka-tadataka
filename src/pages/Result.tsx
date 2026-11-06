@@ -1,21 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AdvancedImage } from '@cloudinary/react'
-import { Cloudinary } from '@cloudinary/url-gen'
-import { auto } from '@cloudinary/url-gen/actions/resize'
-import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
-import { uploadDrawingImage } from '../lib/cloudinary'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { latLng } from 'leaflet'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
+import { Judgement } from './Judgement'
+import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
+import { MapView } from '../components/MapView'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
-import { Judgement } from './Judgement'
 
 const MIN_JUDGEMENT_MS = 3000
 
 export function Result() {
   const { id } = useParams<{ id: string }>()
-  return <LoadResult key={id} id={id!} />
+  if (!id) return <Navigate to="/" replace />
+  return <LoadResult key={id} id={id} />
 }
 
 function LoadResult({ id }: { id: string }) {
@@ -80,16 +79,26 @@ function DrawingResult({
   const [result, setResult] = useState<AIResult | null>(savedResult ?? null)
   const [judging, setJudging] = useState(!savedResult && trail.length >= 2)
   const [error, setError] = useState<string | null>(null)
-  const [imagePublicId, setImagePublicId] = useState(savedImagePublicId ?? null)
-  const uploadedImage = useRef(savedImagePublicId ?? null)
-  const requested = useRef(!!savedResult)
-  const image = useRef<string | null>(null)
+  const [image, setImage] = useState<string | null>(null)
+  const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
+  const [saved, setSaved] = useState(Boolean(savedResult))
+  const requested = useRef(false)
+  const distanceKm = useMemo(
+    () =>
+      trail.reduce((meters, point, index) => {
+        if (index === 0) return meters
+        const previous = trail[index - 1]
+        return meters + latLng(previous.lat, previous.lng).distanceTo([point.lat, point.lng])
+      }, 0) / 1000,
+    [trail],
+  )
 
   const handleCanvasReady = useCallback(
     async (base64: string) => {
       if (requested.current) return
       requested.current = true
-      image.current = base64
+      setImage(base64)
+      if (savedResult) return
       setError(null)
       setJudging(true)
       const minimumDisplay = new Promise<void>((resolve) => {
@@ -98,31 +107,30 @@ function DrawingResult({
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
-        if (!uploadedImage.current) {
-          uploadedImage.current = (await uploadDrawingImage(base64)).publicId
-        }
-        await saveResult(id, res, uploadedImage.current)
-        setImagePublicId(uploadedImage.current)
+        // 画像のアップロードが失敗しても、リロード時は保存済みの採点結果を使う。
+        await saveResult(id, res)
+        setSaved(true)
+        const publicId = imagePublicId ?? (await uploadDrawingImage(base64)).publicId
+        setImagePublicId(publicId)
+        await saveResult(id, res, publicId)
+        setSaved(true)
       } catch {
-        setError('作品の判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
+        setError('判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
       } finally {
         await minimumDisplay
         setJudging(false)
       }
     },
-    [id, theme, result],
+    [id, theme, result, savedResult, imagePublicId],
   )
 
-  const cloudinary = new Cloudinary({
-    cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
-  })
-  const generatedImage = imagePublicId
-    ? cloudinary
-        .image(imagePublicId)
-        .format('auto')
-        .quality('auto')
-        .resize(auto().gravity(autoGravity()).width(500).height(500))
-    : null
+  function saveArtwork() {
+    if (!image) return
+    const link = document.createElement('a')
+    link.href = `data:image/png;base64,${image}`
+    link.download = `takadaka-tadataka-${new Date().toISOString().slice(0, 10)}.png`
+    link.click()
+  }
 
   if (judging) {
     return (
@@ -133,60 +141,81 @@ function DrawingResult({
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-white p-6 gap-6">
-      <h2 className="text-2xl font-bold">結果</h2>
-
-      <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
-        <TrailCanvas trail={trail} onReady={handleCanvasReady} />
-      </div>
-
-      {trail.length < 2 && (
-        <p className="text-center text-gray-600">
-          判定できる軌跡がありません。位置情報を有効にして、もう一度歩いてみてください。
-        </p>
-      )}
-
-      {error && (
-        <div className="text-center space-y-3" role="alert">
-          <p className="text-red-500 text-sm">{error}</p>
-          <button
-            type="button"
-            className="underline"
-            onClick={() => {
-              if (!image.current) return
-              requested.current = false
-              void handleCanvasReady(image.current)
-            }}
-          >
-            {result ? '保存を再試行する' : 'もう一度判定する'}
-          </button>
+    <main className="result-page">
+      <div className="result-content">
+        <header className="result-header">おさんぽの結果</header>
+        <div className="result-heading">
+          <h1>作品が完成したよ！</h1>
+          <p>AIは何の絵だと思ったかな？</p>
         </div>
-      )}
 
-      {generatedImage && (
-        <div className="w-64 h-64 border-2 border-gray-200 rounded-xl overflow-hidden">
-          <AdvancedImage cldImg={generatedImage} />
-        </div>
-      )}
-      {result && (
-        <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
-          <div className="text-center">
-            <span className="text-6xl font-bold">{result.score}</span>
-            <span className="text-2xl text-gray-400">/100</span>
+        <section className="result-artwork" aria-label="あなたの作品">
+          <h2>あなたの作品</h2>
+          <div className="result-route-heading">
+            <span>歩いた経路</span>
+            <p>
+              歩行距離 <strong>{distanceKm.toFixed(2)}</strong> km
+            </p>
           </div>
-          <p className="text-center text-gray-700">
-            AIの答え：<strong>{result.guess}</strong>
-          </p>
-          <p className="text-sm text-gray-500">{result.reason}</p>
-        </div>
-      )}
+          {trail.length > 0 ? (
+            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
+              <MapView trail={trail} fitTrail />
+            </div>
+          ) : (
+            <p className="result-message">記録された歩行経路がありません。</p>
+          )}
+          <p className="result-route-note">距離は記録されたGPSの軌跡から計算した目安です。</p>
+          <div hidden aria-hidden="true">
+            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+          </div>
+        </section>
 
-      <button
-        onClick={() => navigate('/')}
-        className="w-full max-w-sm py-4 border-2 border-black text-black text-lg font-semibold rounded-2xl"
-      >
-        もう一度
-      </button>
-    </div>
+        <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
+          <h2>AIの採点結果</h2>
+          {result && saved ? (
+            <>
+              <p className="result-points">
+                {result.score}
+                <span>点</span>
+              </p>
+              <p className="result-guess">AIの予想：{result.guess || '判定なし'}</p>
+              <p className="result-reason">{result.reason}</p>
+            </>
+          ) : (
+            <p className="result-message" role="status">
+              {judging
+                ? 'AIが作品を判定しています…'
+                : error
+                  ? '判定結果を取得できませんでした'
+                  : '採点できる軌跡がありません'}
+            </p>
+          )}
+          {error && (
+            <div className="result-error" role="alert">
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!image) return
+                  requested.current = false
+                  void handleCanvasReady(image)
+                }}
+              >
+                {result ? '保存を再試行する' : 'もう一度判定する'}
+              </button>
+            </div>
+          )}
+        </section>
+
+        <footer className="result-actions">
+          <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
+            作品を保存する
+          </button>
+          <button type="button" className="result-home" onClick={() => navigate('/')}>
+            ホームに戻る
+          </button>
+        </footer>
+      </div>
+    </main>
   )
 }

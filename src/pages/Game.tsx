@@ -11,6 +11,7 @@ import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
 import type { TrailPoint } from '../types'
 
 const GAME_SECONDS = 15 * 60
+const GPS_LOADING_MIN_MS = 5000
 
 export function Game() {
   const { id } = useParams<{ id: string }>()
@@ -133,6 +134,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const {
     trail,
     currentPosition,
+    isLocating,
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
@@ -145,15 +147,45 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [minimumGPSLoading, setMinimumGPSLoading] = useState(true)
+  const [gpsLoadingDismissed, setGPSLoadingDismissed] = useState(false)
+  const showGPSLoading =
+    !gpsLoadingDismissed &&
+    (isLocating || minimumGPSLoading) &&
+    !gpsError &&
+    !paused &&
+    !saving &&
+    !expired
 
   useEffect(() => {
-    startTimer()
+    const timeout = setTimeout(() => setMinimumGPSLoading(false), GPS_LOADING_MIN_MS)
+    return () => clearTimeout(timeout)
+  }, [])
+
+  useEffect(() => {
+    startGPS()
     acquire()
     return () => {
       stopGPS()
+      stopTimer()
       release()
     }
-  }, [startTimer, stopGPS, acquire, release])
+  }, [startGPS, stopGPS, stopTimer, acquire, release])
+  useEffect(() => {
+    if (showGPSLoading || isLocating || !currentPosition || gpsError || paused || saving || expired)
+      stopTimer()
+    else startTimer()
+  }, [
+    showGPSLoading,
+    isLocating,
+    currentPosition,
+    gpsError,
+    paused,
+    saving,
+    expired,
+    startTimer,
+    stopTimer,
+  ])
   useEffect(() => {
     if (paused || saving || expired) {
       pauseGPS()
@@ -191,15 +223,16 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
 
   const togglePause = useCallback(() => {
     if (paused) {
-      startTimer()
+      resumeGPS()
+      setGPSLoadingDismissed(true)
+      startGPS()
       acquire()
     } else {
       pauseGPS()
-      stopGPS()
       stopTimer()
     }
     setPaused((value) => !value)
-  }, [paused, startTimer, pauseGPS, stopGPS, stopTimer, acquire])
+  }, [paused, resumeGPS, startGPS, pauseGPS, stopTimer, acquire])
 
   return (
     <main className="walking-page">
@@ -261,26 +294,62 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
           <MapView trail={trail} currentPosition={currentPosition} />
-          {!isMotionStationary && !showWalkingWarning && !saving && !expired && (
-            <div className="walking-warning" role="status">
-              <div>
-                <p>
-                  {motionStatus === 'listening'
-                    ? '端末の動きを確認しています。'
-                    : '端末の動きを確認できません。'}
-                </p>
-                <p>
-                  {motionStatus === 'listening'
-                    ? '3秒間、端末を動かさずにお待ちください。'
-                    : '加速度センサーが利用できる環境で、利用を許可してください。'}
+          {showGPSLoading && (
+            <div
+              className="walking-gps-loading"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <div className="walking-gps-loading-card">
+                <span className="walking-gps-spinner" aria-hidden="true" />
+                <h2>位置情報を取得しています</h2>
+                <p>立ち止まって、そのままお待ちください。</p>
+                <p>取得に20〜40秒ほどかかる場合があります。</p>
+                <p className="walking-gps-loading-hint">
+                  位置情報の利用を求められたら、許可してください。
                 </p>
               </div>
             </div>
           )}
+          {!isMotionStationary &&
+            !showWalkingWarning &&
+            !showGPSLoading &&
+            !paused &&
+            !saving &&
+            !expired && (
+              <div className="walking-warning" role="status">
+                <div>
+                  <p>
+                    {motionStatus === 'listening'
+                      ? '端末の動きを確認しています。'
+                      : '端末の動きを確認できません。'}
+                  </p>
+                  <p>
+                    {motionStatus === 'listening'
+                      ? '3秒間、端末を動かさずにお待ちください。'
+                      : '加速度センサーが利用できる環境で、利用を許可してください。'}
+                  </p>
+                </div>
+              </div>
+            )}
           {paused && isMotionStationary && !showWalkingWarning && (
-            <div className="walking-paused">一時停止中</div>
+            <div
+              className={saving ? 'walking-paused' : 'walking-warning'}
+              role={saving ? undefined : 'status'}
+            >
+              <div>
+                <p>一時停止中</p>
+                {!saving && (
+                  <>
+                    <p>軌跡の記録とタイマーを停止しています。</p>
+                    <p>「再開する」を押すと再開します。</p>
+                  </>
+                )}
+              </div>
+            </div>
           )}
-          {showWalkingWarning && (
+          {showWalkingWarning && !showGPSLoading && (
             <div className="walking-warning" role="alert">
               <div>
                 <p>前を向いて歩いてください。</p>
