@@ -35,6 +35,19 @@ test('rejects malformed payloads, missing accuracy, extra fields and excessive p
     invalid(value)
 })
 
+test('requires each field as an own property and rejects unapproved replacement fields', () => {
+  for (const field of ['lat', 'lng', 't', 'accuracy']) {
+    const complete = point()
+    const missing = { ...complete }
+    delete missing[field]
+    invalid([missing])
+    invalid([{ ...missing, speed: 0 }])
+    invalid([Object.assign(Object.create({ [field]: complete[field] }), missing)])
+  }
+  const { lat, lng, t, accuracy } = point()
+  assert.deepEqual(validateTrail([{ accuracy, t, lng, lat }], start, now), [point()])
+})
+
 test('rejects non-finite, out-of-range and non-numeric coordinates/times/accuracy', () => {
   for (const extra of [
     { lat: NaN },

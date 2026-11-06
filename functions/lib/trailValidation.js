@@ -4,6 +4,8 @@ const CLOCK_TOLERANCE_MS = 5000;
 const MAX_SPEED_KMH = 15;
 const MIN_DISTANCE_METERS = 3;
 const MAX_ACCURACY_METERS = 30;
+const REQUIRED_POINT_FIELDS = ['lat', 'lng', 't', 'accuracy'];
+const ALLOWED_POINT_FIELDS = new Set(REQUIRED_POINT_FIELDS);
 export class TrailValidationError extends Error {
 }
 function finiteNumber(value) {
@@ -24,11 +26,12 @@ export function validateTrail(input, sessionCreatedAt, now) {
         throw new TrailValidationError('軌跡データの形式または点数が不正です。');
     const result = [];
     for (const raw of input) {
-        if (!raw ||
-            typeof raw !== 'object' ||
-            Array.isArray(raw) ||
-            Object.keys(raw).length !== 4 ||
-            !Object.keys(raw).every((key) => ['lat', 'lng', 't', 'accuracy'].includes(key)))
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+            throw new TrailValidationError('軌跡点には緯度・経度・時刻・GPS精度が必要です。');
+        // 項目数ではなく、必須項目の存在と許可リストでスキーマを検証する。
+        // 任意項目を追加する場合は許可リストを拡張し、値の検証も追加する。
+        if (!REQUIRED_POINT_FIELDS.every((field) => Object.hasOwn(raw, field)) ||
+            !Object.keys(raw).every((field) => ALLOWED_POINT_FIELDS.has(field)))
             throw new TrailValidationError('軌跡点には緯度・経度・時刻・GPS精度が必要です。');
         const { lat, lng, t, accuracy } = raw;
         if (!finiteNumber(lat) ||
