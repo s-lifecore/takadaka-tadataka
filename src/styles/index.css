@@ -1038,8 +1038,9 @@ body:has(.theme-page) {
   display: flex;
   align-items: center;
   gap: 3px;
-  min-width: 74px;
-  min-height: 34px;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
   padding: 5px 10px;
   border: 1px solid #c89f76;
   border-radius: 11px;
@@ -1768,4 +1769,52 @@ body:has(.theme-page) {
 }
 .result-actions button:active:not(:disabled) {
   transform: translateY(2px);
+}
+
+.collection-state {
+  margin: 24px 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.collection-state button {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 1px solid #bc9162;
+  border-radius: 12px;
+}
+.collection-footer .collection-empty {
+  margin: 28px auto 0;
+  width: min(100%, 240px);
+  min-height: 48px;
+  padding: 12px 20px;
+  background: #d98a4f;
+  color: #fffaf0;
+  border: 1.5px solid #aa6332;
+  border-radius: 17px;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 5px 0 #9c572e;
+}
+.collection-footer .collection-empty:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #9c572e;
+}
+.collection-artwork img,
+.collection-artwork canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+  object-fit: contain;
+}
+.collection-card-info > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.collection-card-footer p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.collection-card-footer time {
+  flex-shrink: 0;
 }

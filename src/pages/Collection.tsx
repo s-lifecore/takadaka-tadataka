@@ -1,3 +1,10 @@
+import { useEffect, useState } from 'react'
+import { onAuthStateChanged } from 'firebase/auth'
+import { Cloudinary } from '@cloudinary/url-gen'
+import dayjs from 'dayjs'
+import { auth } from '../lib/firebase'
+import { loadSavedDrawings, type SavedDrawing } from '../lib/drawings'
+import { TrailCanvas } from '../components/TrailCanvas'
 import { useNavigate } from 'react-router-dom'
 
 function BookIcon() {
@@ -17,12 +24,75 @@ function BookIcon() {
   )
 }
 
+function Artwork({ drawing }: { drawing: SavedDrawing }) {
+  const [failed, setFailed] = useState(false)
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  const imageUrl =
+    drawing.imagePublicId && cloudName
+      ? new Cloudinary({ cloud: { cloudName } }).image(drawing.imagePublicId).toURL()
+      : null
+  return imageUrl && !failed ? (
+    <img
+      src={imageUrl}
+      alt={`${drawing.theme}の作品`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  ) : drawing.trail.length >= 2 ? (
+    <div role="img" aria-label={`${drawing.theme}の線画`}>
+      <TrailCanvas trail={drawing.trail} />
+    </div>
+  ) : (
+    <p>作品画像がありません</p>
+  )
+}
+
 export function Collection() {
   const navigate = useNavigate()
+  const [drawings, setDrawings] = useState<SavedDrawing[]>([])
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [attempt, setAttempt] = useState(0)
+  useEffect(() => {
+    let active = true
+    let request = 0
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      const currentRequest = ++request
+      setDrawings([])
+      setStatus('loading')
+      loadSavedDrawings()
+        .then((items) => {
+          if (active && currentRequest === request) {
+            setDrawings(items)
+            setStatus('ready')
+          }
+        })
+        .catch(() => {
+          if (active && currentRequest === request) setStatus('error')
+        })
+    })
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [attempt])
   return (
     <main className="collection-page">
       <div className="collection-content">
         <header className="collection-header">
+          <button type="button" aria-label="ホームに戻る" onClick={() => navigate('/')}>
+            <svg
+              width="23"
+              height="23"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m3 10 9-8 9 8v11h-7v-8h-4v8H3Z" />
+            </svg>
+          </button>
           <h1>作品帳</h1>
           <svg
             className="collection-compass"
@@ -50,88 +120,69 @@ export function Collection() {
         <div className="collection-total">
           <BookIcon />
           <span>保存した作品</span>
-          <strong>1作品</strong>
+          <strong>{status === 'ready' ? `${drawings.length}作品` : '—'}</strong>
         </div>
 
-        <article className="collection-card" aria-label="サンプル作品：りんご">
-          <div className="collection-card-header">
-            <span>No. 001</span>
-            <p>
-              サンプル作品 <i aria-hidden="true">✦</i>
-            </p>
+        {status === 'loading' && (
+          <p className="collection-state" role="status">
+            作品を読み込み中…
+          </p>
+        )}
+        {status === 'error' && (
+          <div className="collection-state" role="alert">
+            <p>作品を取得できませんでした。通信環境を確認してください。</p>
+            <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+              もう一度読み込む
+            </button>
           </div>
-          <div className="collection-artwork">
-            <svg
-              viewBox="0 0 260 158"
-              fill="none"
-              role="img"
-              aria-label="歩いた軌跡をイメージした、りんごのサンプル線画"
+        )}
+        {status === 'ready' &&
+          drawings.map((drawing, index) => (
+            <article
+              key={drawing.id}
+              className="collection-card"
+              aria-label={`作品：${drawing.theme}`}
             >
-              <defs>
-                <pattern id="collection-grid" width="33" height="33" patternUnits="userSpaceOnUse">
-                  <path d="M33 0H0v33" stroke="#eee3d6" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect x="12" y="8" width="236" height="132" fill="url(#collection-grid)" />
-              <path
-                d="M121 40C89 20 58 49 62 85c3 34 25 46 47 40 13-4 18-4 28 0 26 9 48-7 52-36 5-34-13-51-46-51"
-                stroke="#a75f40"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M121 40c1-13 8-22 17-27m-10 17c11-14 28-15 41-12-6 15-23 22-41 12Z"
-                stroke="#a75f40"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="119" cy="40" r="4" fill="#a3b99a" stroke="#fffaf0" strokeWidth="1.5" />
-              <circle cx="127" cy="40" r="4" fill="#df9563" stroke="#fffaf0" strokeWidth="1.5" />
-              <path d="m14 14 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#f1e0c6" />
-              <circle cx="233" cy="125" r="2.3" fill="#d4ad85" />
-              <text x="130" y="149" textAnchor="middle" fill="#ae9176" fontSize="7">
-                MY WALKING ART
-              </text>
-            </svg>
-          </div>
-          <div className="collection-card-info">
-            <div>
-              <p>お題</p>
-              <h3>りんご</h3>
-            </div>
-            <div className="collection-score">
-              <span>AIスコア</span>
-              <strong>
-                85<span>点</span>
-              </strong>
-            </div>
-          </div>
-          <div className="collection-card-footer">
-            <p>AIの予想：りんご</p>
-            <time dateTime="2026-11-02">2026.11.02</time>
-          </div>
-        </article>
+              <div className="collection-card-header">
+                <span>No. {String(index + 1).padStart(3, '0')}</span>
+                <p>
+                  旅の記録 <i aria-hidden="true">✦</i>
+                </p>
+              </div>
+              <div className="collection-artwork">
+                <Artwork drawing={drawing} />
+              </div>
+              <div className="collection-card-info">
+                <div>
+                  <p>お題</p>
+                  <h3>{drawing.theme}</h3>
+                </div>
+                <div className="collection-score">
+                  <span>AIスコア</span>
+                  <strong>
+                    {drawing.result.score}
+                    <span>点</span>
+                  </strong>
+                </div>
+              </div>
+              <div className="collection-card-footer">
+                <p>AIの予想：{drawing.result.guess || '判定なし'}</p>
+                {dayjs(drawing.savedAt).isValid() ? (
+                  <time dateTime={drawing.savedAt} aria-label="保存日">
+                    {dayjs(drawing.savedAt).format('YYYY.MM.DD')}
+                  </time>
+                ) : (
+                  <span>保存日不明</span>
+                )}
+              </div>
+            </article>
+          ))}
 
         <p className="collection-memory">旅の思い出がここに増えていくよ</p>
         <footer className="collection-footer">
-          <button type="button" onClick={() => navigate('/')}>
-            <svg
-              width="23"
-              height="23"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m3 10 9-8 9 8v11h-7v-8h-4v8H3Z" />
-            </svg>
-            ホームに戻る
+          <button type="button" className="collection-empty" onClick={() => navigate('/playalone')}>
+            絵をかいてみよう
           </button>
-          <p>※ お題・点数・日付はデザイン用のダミーデータです。</p>
         </footer>
       </div>
     </main>
