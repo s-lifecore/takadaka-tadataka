@@ -11,6 +11,7 @@ import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
 import type { TrailPoint } from '../types'
 
 const GAME_SECONDS = 15 * 60
+const GPS_LOADING_MIN_MS = 5000
 
 export function Game() {
   const { id } = useParams<{ id: string }>()
@@ -124,39 +125,76 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const navigate = useNavigate()
   const [paused, setPaused] = useState(false)
   const {
+    isShaking,
+    isStationary: isMotionStationary,
+    status: motionStatus,
+    isRequesting,
+    requestPermission,
+  } = useDeviceOrientation()
+  const {
     trail,
     currentPosition,
+    isLocating,
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
     resume: resumeGPS,
   } = useGeolocation(initialTrail)
-  const {
-    isLooking,
-    status: orientationStatus,
-    isRequesting,
-    requestPermission,
-  } = useDeviceOrientation()
+  const showWalkingWarning = isShaking
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
   const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [minimumGPSLoading, setMinimumGPSLoading] = useState(true)
+  const [gpsLoadingDismissed, setGPSLoadingDismissed] = useState(false)
+  const showGPSLoading =
+    !gpsLoadingDismissed &&
+    (isLocating || minimumGPSLoading) &&
+    !gpsError &&
+    !paused &&
+    !saving &&
+    !expired
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setMinimumGPSLoading(false), GPS_LOADING_MIN_MS)
+    return () => clearTimeout(timeout)
+  }, [])
 
   useEffect(() => {
     startGPS()
-    startTimer()
     acquire()
     return () => {
       stopGPS()
+      stopTimer()
       release()
     }
-  }, [startGPS, startTimer, stopGPS, acquire, release])
+  }, [startGPS, stopGPS, stopTimer, acquire, release])
   useEffect(() => {
-    if (isLooking) pauseGPS()
-    else if (!paused && !saving) resumeGPS()
-  }, [isLooking, paused, saving, pauseGPS, resumeGPS])
+    if (showGPSLoading || isLocating || !currentPosition || gpsError || paused || saving || expired)
+      stopTimer()
+    else startTimer()
+  }, [
+    showGPSLoading,
+    isLocating,
+    currentPosition,
+    gpsError,
+    paused,
+    saving,
+    expired,
+    startTimer,
+    stopTimer,
+  ])
+  useEffect(() => {
+    if (paused || saving || expired) {
+      pauseGPS()
+      stopGPS()
+    } else {
+      resumeGPS()
+      startGPS()
+    }
+  }, [paused, saving, expired, pauseGPS, stopGPS, resumeGPS, startGPS])
 
   const handleFinish = useCallback(async () => {
     if (finishing.current) return
@@ -185,23 +223,22 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
 
   const togglePause = useCallback(() => {
     if (paused) {
-      if (!isLooking) resumeGPS()
+      resumeGPS()
+      setGPSLoadingDismissed(true)
       startGPS()
-      startTimer()
       acquire()
     } else {
       pauseGPS()
-      stopGPS()
       stopTimer()
     }
     setPaused((value) => !value)
-  }, [paused, isLooking, resumeGPS, startGPS, startTimer, pauseGPS, stopGPS, stopTimer, acquire])
+  }, [paused, resumeGPS, startGPS, pauseGPS, stopTimer, acquire])
 
   return (
     <main className="walking-page">
       <div className="walking-content">
         <header className="walking-header">
-          <h1>{paused || isLooking ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
+          <h1>{paused ? 'ひとやすみ中' : 'おさんぽ中'}</h1>
           <WalkingIcon name="compass" />
         </header>
         <div className="walking-summary">
@@ -230,43 +267,101 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             )}
           </div>
         )}
-        {(orientationStatus === 'permission-required' ||
-          orientationStatus === 'denied' ||
-          orientationStatus === 'error') && (
+        {(motionStatus === 'permission-required' ||
+          motionStatus === 'denied' ||
+          motionStatus === 'error') && (
           <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
             <p>
-              {orientationStatus === 'denied'
-                ? '傾きセンサーの利用が拒否されています。ブラウザの設定で許可してください。'
-                : orientationStatus === 'error'
-                  ? '傾きセンサーを有効にできませんでした。もう一度お試しください。'
-                  : '歩きスマホ警告のため、端末の傾きセンサーの利用を許可してください。'}
+              {motionStatus === 'denied'
+                ? '加速度センサーの利用が拒否されています。ブラウザの設定で許可してください。'
+                : motionStatus === 'error'
+                  ? '加速度センサーを有効にできませんでした。もう一度お試しください。'
+                  : '歩きスマホ警告のため、端末の加速度センサーの利用を許可してください。'}
             </p>
             <button
               onClick={requestPermission}
               disabled={isRequesting}
               className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
             >
-              {isRequesting ? '確認中…' : '傾きセンサーを有効にする'}
+              {isRequesting ? '確認中…' : '加速度センサーを有効にする'}
             </button>
           </div>
         )}
-        {orientationStatus === 'unsupported' && (
+        {motionStatus === 'unsupported' && (
           <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
-            この環境では歩きスマホ検知を利用できません。HTTPS対応のスマートフォンでご利用ください。
+            この環境では加速度センサーを利用できないため、地図の表示を制限しています。HTTPS対応のスマートフォンでご利用ください。
           </div>
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
           <MapView trail={trail} currentPosition={currentPosition} />
-          {paused && !isLooking && <div className="walking-paused">一時停止中</div>}
-          {isLooking && (
+          {showGPSLoading && (
+            <div
+              className="walking-gps-loading"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <div className="walking-gps-loading-card">
+                <span className="walking-gps-spinner" aria-hidden="true" />
+                <h2>位置情報を取得しています</h2>
+                <p>立ち止まって、そのままお待ちください。</p>
+                <p>取得に20〜40秒ほどかかる場合があります。</p>
+                <p className="walking-gps-loading-hint">
+                  位置情報の利用を求められたら、許可してください。
+                </p>
+              </div>
+            </div>
+          )}
+          {!isMotionStationary &&
+            !showWalkingWarning &&
+            !showGPSLoading &&
+            !paused &&
+            !saving &&
+            !expired && (
+              <div className="walking-warning" role="status">
+                <div>
+                  <p>
+                    {motionStatus === 'listening'
+                      ? '端末の動きを確認しています。'
+                      : '端末の動きを確認できません。'}
+                  </p>
+                  <p>
+                    {motionStatus === 'listening'
+                      ? '3秒間、端末を動かさずにお待ちください。'
+                      : '加速度センサーが利用できる環境で、利用を許可してください。'}
+                  </p>
+                </div>
+              </div>
+            )}
+          {paused && isMotionStationary && !showWalkingWarning && (
+            <div
+              className={saving ? 'walking-paused' : 'walking-warning'}
+              role={saving ? undefined : 'status'}
+            >
+              <div>
+                <p>一時停止中</p>
+                {!saving && (
+                  <>
+                    <p>軌跡の記録とタイマーを停止しています。</p>
+                    <p>「再開する」を押すと再開します。</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {showWalkingWarning && !showGPSLoading && (
             <div className="walking-warning" role="alert">
               <div>
                 <p>前を向いて歩いてください。</p>
-                <p>軌跡の記録を一時停止しています。</p>
                 <p>
                   {paused
-                    ? '端末を傾けてから「再開する」を押してください。'
-                    : '端末を傾けると記録が再開します。'}
+                    ? '一時停止中のため、軌跡の記録は停止しています。'
+                    : '地図を暗くしていますが、軌跡の記録は続けています。'}
+                </p>
+                <p>
+                  {paused
+                    ? '立ち止まってから「再開する」を押してください。'
+                    : '3秒間、端末の動きが収まると地図が見えるようになります。'}
                 </p>
               </div>
             </div>

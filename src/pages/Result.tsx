@@ -190,7 +190,7 @@ function DrawingResult({
           </div>
           {trail.length > 0 ? (
             <div className="result-route-map" role="region" aria-label="歩行経路の地図">
-              <MapView trail={trail} fitTrail />
+              <MapView trail={trail} fitTrail interactive={false} />
             </div>
           ) : (
             <p className="result-message">記録された歩行経路がありません。</p>
