@@ -7,6 +7,7 @@ type Props = {
   trail: TrailPoint[]
   currentPosition?: Position | null
   interactive?: boolean
+  fitTrail?: boolean
 }
 
 // GPS取得前の表示位置。金沢工業大学 扇が丘キャンパス（世界測地系）。
@@ -32,7 +33,7 @@ function FitTrail({ trail }: { trail: TrailPoint[] }) {
   return null
 }
 
-export function MapView({ trail, currentPosition, interactive = true }: Props) {
+export function MapView({ trail, currentPosition, interactive = true, fitTrail = false }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
   const center = currentPosition ?? trail[trail.length - 1] ?? INITIAL_CENTER
 
@@ -81,10 +82,10 @@ export function MapView({ trail, currentPosition, interactive = true }: Props) {
           <Tooltip>現在地</Tooltip>
         </CircleMarker>
       )}
-      {interactive ? (
-        <CenterOnPosition lat={center.lat} lng={center.lng} />
-      ) : (
+      {fitTrail ? (
         <FitTrail trail={trail} />
+      ) : (
+        <CenterOnPosition lat={center.lat} lng={center.lng} />
       )}
     </MapContainer>
   )
