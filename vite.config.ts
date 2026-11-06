@@ -13,7 +13,25 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/([a-z]\.)?tile\.openstreetmap\.org\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'osm-tiles',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 500 },
+            },
+          },
+        ],
+      },
       manifest: {
+        start_url: '/',
+        scope: '/',
         name: '高々忠敬',
         short_name: '高々忠敬',
         description: '歩いて絵を描く、位置情報お絵かきゲーム',

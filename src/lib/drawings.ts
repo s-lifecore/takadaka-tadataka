@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import dayjs from 'dayjs'
-import { auth, db, signInAnon } from './firebase'
+import { auth, db, signInAnon, withOnlineSave } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
 
 let authentication: Promise<unknown> | null = null
@@ -17,15 +17,17 @@ async function ensureUser() {
   return auth.currentUser
 }
 export async function createDrawing() {
-  const user = await ensureUser()
-  const drawing = doc(collection(db, 'drawings'))
-  await setDoc(drawing, {
-    uid: user.uid,
-    theme: 'りんご',
-    trail: [],
-    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
+  return withOnlineSave(async () => {
+    const user = await ensureUser()
+    const drawing = doc(collection(db, 'drawings'))
+    await setDoc(drawing, {
+      uid: user.uid,
+      theme: 'りんご',
+      trail: [],
+      createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
+    })
+    return drawing.id
   })
-  return drawing.id
 }
 export async function loadDrawing(id: string) {
   const user = await ensureUser()
@@ -36,12 +38,19 @@ export async function loadDrawing(id: string) {
   return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
 }
 export async function saveTrail(id: string, trail: TrailPoint[]) {
-  await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { trail })
+  return withOnlineSave(async () => {
+    await ensureUser()
+    await updateDoc(doc(db, 'drawings', id), { trail })
+  })
 }
 export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
-  await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { result, ...(imagePublicId ? { imagePublicId } : {}) })
+  return withOnlineSave(async () => {
+    await ensureUser()
+    await updateDoc(doc(db, 'drawings', id), {
+      result,
+      ...(imagePublicId ? { imagePublicId } : {}),
+    })
+  })
 }
 
 export async function loadTrail(id: string): Promise<TrailPoint[]> {
