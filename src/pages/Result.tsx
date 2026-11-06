@@ -5,7 +5,7 @@ import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { judgeDrawing } from '../lib/huggingface'
+import { judgeDrawing } from '../lib/groq'
 import { MapView } from '../components/MapView'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -98,7 +98,7 @@ function DrawingResult({
       if (requested.current) return
       requested.current = true
       setImage(base64)
-      if (savedResult) return
+      if (savedResult && savedImagePublicId) return
       setError(null)
       setJudging(true)
       const minimumDisplay = new Promise<void>((resolve) => {
@@ -121,7 +121,7 @@ function DrawingResult({
         setJudging(false)
       }
     },
-    [id, theme, result, savedResult, imagePublicId],
+    [id, theme, result, savedResult, savedImagePublicId, imagePublicId],
   )
 
   const saveArtwork = () => {
@@ -170,29 +170,6 @@ function DrawingResult({
           </div>
         </section>
 
-        {result && (
-          <div className="w-full max-w-sm bg-gray-50 rounded-2xl p-6 space-y-3">
-            <div className="text-center">
-              <span className="text-4xl font-bold">{result.score.toFixed(5)}</span>
-              <span className="text-2xl text-gray-400">%</span>
-            </div>
-            <p className="text-sm text-gray-500">{result.reason}</p>
-          </div>
-        )}
-
-        {error && <p role="alert">{error}</p>}
-        {saved && <p role="status">採点結果を保存しました</p>}
-        {error && (
-          <button
-            type="button"
-            onClick={() => {
-              requested.current = false
-              if (image) void handleCanvasReady(image)
-            }}
-          >
-            もう一度試す
-          </button>
-        )}
         <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
           <h2>AIの採点結果</h2>
           {result && saved ? (

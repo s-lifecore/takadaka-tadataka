@@ -1,4 +1,4 @@
-import type { AIResult } from '../types/ai'
+import type { AIResult } from '../types'
 
 export async function judgeDrawing(imageBase64: string, theme: string): Promise<AIResult> {
   let response: Response

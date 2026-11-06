@@ -9,12 +9,12 @@ const input = { theme: 'りんご', imageBase64 }
 const valid = { score: 85, reason: '丸みが似ていますが、上部のくぼみを表現するとさらに良くなります。' }
 const success = data => Response.json({ choices: [{ message: { content: JSON.stringify(data) } }] })
 
-test('Hugging Faceに画像・採点基準を送り、従来の結果形式を返す', async () => {
+test('Groqに画像・採点基準を送り、従来の結果形式を返す', async () => {
   const result = await scoreDrawing(input, {
     apiKey: 'test-secret',
     model: 'test-vision',
     fetchImpl: async (url, options) => {
-      assert.equal(url, 'https://router.huggingface.co/v1/chat/completions')
+      assert.equal(url, 'https://api.groq.com/openai/v1/chat/completions')
       assert.equal(options.headers.Authorization, 'Bearer test-secret')
       const body = JSON.parse(options.body)
       assert.equal(body.model, 'test-vision')
@@ -100,16 +100,14 @@ test('HTTPエンドポイントの成功・エラー・ルーティング', asyn
   assert.equal((await fetch(url + '/missing')).status, 404)
 })
 
-test('環境変数でGroqを優先し、明示指定とHFの既存設定も使える', () => {
-  const env = { GROQ_API_KEY: 'groq-key', HF_TOKEN: 'hf-key' }
-  assert.deepEqual(scoringOptionsFromEnv(env), { provider: 'groq', apiKey: 'groq-key', model: undefined })
-  assert.equal(scoringOptionsFromEnv({ ...env, AI_PROVIDER: 'huggingface' }).apiKey, 'hf-key')
-  assert.equal(scoringOptionsFromEnv({ HF_TOKEN: 'hf-key' }).provider, 'huggingface')
+test('Groqの環境変数から採点設定を読み込む', () => {
+  assert.deepEqual(scoringOptionsFromEnv({ GROQ_API_KEY: 'groq-key', GROQ_MODEL: 'vision' }), { apiKey: 'groq-key', model: 'vision' })
+  assert.deepEqual(scoringOptionsFromEnv({}), { apiKey: undefined, model: undefined })
 })
 
 test('Groqに画像とJSON指定を送り、点数と理由を返す', async () => {
   assert.deepEqual(await scoreDrawing(input, {
-    provider: 'groq', apiKey: 'groq-secret',
+    apiKey: 'groq-secret',
     fetchImpl: async (url, options) => {
       assert.equal(url, 'https://api.groq.com/openai/v1/chat/completions')
       assert.equal(options.headers.Authorization, 'Bearer groq-secret')
@@ -124,11 +122,10 @@ test('Groqに画像とJSON指定を送り、点数と理由を返す', async () 
 })
 
 test('Groqの設定・認証・利用上限エラーを表示する', async () => {
-  await assert.rejects(scoreDrawing(input, { provider: 'unknown', apiKey: 'test' }), /AI_PROVIDER/)
-  await assert.rejects(scoreDrawing(input, { provider: 'groq' }), /GROQ_API_KEY/)
+  await assert.rejects(scoreDrawing(input, {}), /GROQ_API_KEY/)
   for (const status of [401, 429]) {
     await assert.rejects(scoreDrawing(input, {
-      provider: 'groq', apiKey: 'test',
+      apiKey: 'test',
       fetchImpl: async () => new Response('', { status }),
     }), err => err.message.includes('Groq') && err.status === (status === 429 ? 429 : 502))
   }
@@ -137,7 +134,7 @@ test('Groqの設定・認証・利用上限エラーを表示する', async () =
  test('小数の点数を受け付け、小数点以下5桁に丸める', async () => {
   for (const [score, expected] of [[85.12345, 85.12345], [85.123456, 85.12346], [0, 0], [100, 100]]) {
     const result = await scoreDrawing(input, {
-      provider: 'groq', apiKey: 'test',
+      apiKey: 'test',
       fetchImpl: async () => success({ score, reason: '丸みが伝わるよ。' }),
     })
     assert.equal(result.score, expected)

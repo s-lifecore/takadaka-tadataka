@@ -16,10 +16,7 @@
     "test:ai": "node --test server/scoring.test.mjs"
   },
   "dependencies": {
-    "@cloudinary/react": "^1.14.4",
-    "@cloudinary/url-gen": "^1.22.0",
     "dayjs": "^1.11.23",
-    "dexie": "^4.0.10",
     "firebase": "^11.0.0",
     "leaflet": "^1.9.4",
     "react": "^19.0.0",

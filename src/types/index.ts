@@ -7,13 +7,8 @@ export type TrailPoint = Position & {
   t: number // Unix timestamp (ms)
 }
 
-import type { AIResult } from './ai'
-export type { AIResult } from './ai'
-
-export type Drawing = {
-  uid: string
-  theme: string
-  imagePublicId: string
-  result: AIResult
-  createdAt: string
+// AIの採点結果
+export type AIResult = {
+  score: number // 0～100の一致度（%）。小数点以下5桁まで
+  reason: string // AIの採点理由
 }

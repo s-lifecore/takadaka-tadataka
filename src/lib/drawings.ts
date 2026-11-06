@@ -1,4 +1,13 @@
-import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore'
 import dayjs from 'dayjs'
 import { auth, db, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
@@ -46,4 +55,21 @@ export async function saveResult(id: string, result: AIResult, imagePublicId?: s
 
 export async function loadTrail(id: string): Promise<TrailPoint[]> {
   return (await loadDrawing(id)).trail ?? []
+}
+
+export async function listDrawings() {
+  const user = await ensureUser()
+  const snapshots = await getDocs(query(collection(db, 'drawings'), where('uid', '==', user.uid)))
+  return snapshots.docs
+    .map((snapshot) => {
+      const data = snapshot.data() as {
+        theme: string
+        trail: TrailPoint[]
+        createdAt: string
+        result?: AIResult
+      }
+      return { ...data, id: snapshot.id }
+    })
+    .filter((drawing) => drawing.result)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }

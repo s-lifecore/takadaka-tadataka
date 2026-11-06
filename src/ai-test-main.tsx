@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import type { AIResult } from './types/ai'
+import type { AIResult } from './types'
 import './ai-test.css'
 
 type RecordEntry = AIResult & { file: string; theme: string; time: string }
@@ -71,7 +71,7 @@ function AITestPage() {
     setError('')
     setResult(null)
     try {
-      const { judgeDrawing } = await import('./lib/huggingface')
+      const { judgeDrawing } = await import('./lib/groq')
       const value = await judgeDrawing(image, theme.trim())
       setResult(value)
       setRecords((previous) => [
@@ -99,7 +99,7 @@ function AITestPage() {
   return (
     <main>
       <h1>GPSお絵かき AI判定テスト</h1>
-      <p>地図やGPSを使わず、PNG画像をHugging Faceで採点します。</p>
+      <p>地図やGPSを使わず、PNG画像をGroqで採点します。</p>
       <label>
         お題
         <input
