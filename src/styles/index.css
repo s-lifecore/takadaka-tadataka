@@ -461,6 +461,60 @@ body,
   font-size: 12px;
   line-height: 1.6;
 }
+.walking-gps-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #f6efe4e6;
+  color: #604733;
+  text-align: center;
+}
+.walking-gps-loading-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 24px 16px;
+  border: 1px solid #cfad87;
+  border-radius: 18px;
+  background: #fffaf0;
+  box-shadow: 0 4px 16px #60473315;
+}
+.walking-gps-spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 16px;
+  border: 4px solid #ecd9bf;
+  border-top-color: #a46235;
+  border-radius: 50%;
+  animation: walking-gps-spin 1s linear infinite;
+}
+.walking-gps-loading h2 {
+  margin-bottom: 12px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.walking-gps-loading p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.walking-gps-loading .walking-gps-loading-hint {
+  margin-top: 12px;
+  color: #866344;
+  font-size: 12px;
+}
+@keyframes walking-gps-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .walking-gps-spinner {
+    animation: none;
+  }
+}
 .walking-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1638,6 +1692,44 @@ body:has(.theme-page) {
   padding: 8px 12px;
   text-decoration: underline;
   cursor: pointer;
+}
+.result-route {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #c89f76;
+  border-radius: 18px;
+  background: #fffaf0;
+}
+.result-route-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.result-route-heading h2 {
+  font-size: 14px;
+  font-weight: 700;
+}
+.result-route-heading strong {
+  color: #a36034;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.result-route-map {
+  position: relative;
+  z-index: 0;
+  height: 260px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.result-route-note {
+  margin-top: 10px;
+  color: #9b7855;
+  font-size: 10px;
+  line-height: 1.6;
 }
 .result-actions {
   display: grid;
