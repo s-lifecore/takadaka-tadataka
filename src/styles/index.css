@@ -40,35 +40,70 @@ body,
 }
 .home-auth {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  width: 100%;
+  gap: 8px;
 }
+/* MD3 button base */
 .home-auth a {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 9px 16px;
-  border: 1px solid #c89f76;
-  border-radius: 13px;
-  background: #fffaf0;
-  color: #604733;
-  font-size: 12px;
-  font-weight: 700;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
   text-decoration: none;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
+.home-auth a .material-icons {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+/* state layer */
+.home-auth a::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: inherit;
+}
+.home-auth a:hover::before {
+  opacity: 0.08;
+}
+.home-auth a:active::before {
+  opacity: 0.14;
+}
+/* Outlined button（サインイン） */
+.home-auth .home-signin {
+  border: 1px solid #c89f76;
+  background: transparent;
+  color: #7c5230;
+}
+/* Filled button（ログイン） */
 .home-auth .home-login {
-  border-color: #a96d43;
+  border: none;
   background: #df894e;
   color: #fffaf0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 2px 6px 2px rgba(0, 0, 0, 0.08);
 }
-.home-auth a:hover {
-  filter: brightness(0.96);
+.home-auth .home-login:hover {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.22),
+    0 4px 8px 3px rgba(0, 0, 0, 0.12);
 }
 .home-auth a:focus-visible {
   outline: 3px solid #a36034;
-  outline-offset: 4px;
+  outline-offset: 3px;
 }
 .home-title {
   text-align: center;
@@ -460,6 +495,60 @@ body,
   margin: 8px 5px 0;
   font-size: 12px;
   line-height: 1.6;
+}
+.walking-gps-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #f6efe4e6;
+  color: #604733;
+  text-align: center;
+}
+.walking-gps-loading-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 24px 16px;
+  border: 1px solid #cfad87;
+  border-radius: 18px;
+  background: #fffaf0;
+  box-shadow: 0 4px 16px #60473315;
+}
+.walking-gps-spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 16px;
+  border: 4px solid #ecd9bf;
+  border-top-color: #a46235;
+  border-radius: 50%;
+  animation: walking-gps-spin 1s linear infinite;
+}
+.walking-gps-loading h2 {
+  margin-bottom: 12px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.walking-gps-loading p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.walking-gps-loading .walking-gps-loading-hint {
+  margin-top: 12px;
+  color: #866344;
+  font-size: 12px;
+}
+@keyframes walking-gps-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .walking-gps-spinner {
+    animation: none;
+  }
 }
 .walking-actions {
   display: grid;
