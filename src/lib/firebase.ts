@@ -56,35 +56,61 @@ export async function saveDrawing(
   result: AIResult,
   drawingId: string,
 ): Promise<{ imagePublicId: string }> {
-  const drawingRef = doc(db, 'drawings', drawingId)
-  const snapshot = await getDoc(drawingRef)
-  if (!snapshot.exists())
-    throw new Error('作品が見つかりません。ホームからゲームを開始し直してください。')
-  const drawing = snapshot.data()
-  if (drawing.uid !== uid) throw new Error('この作品には保存できません。')
-  // 開始時刻を保持し、dayjsでJSTの文字列に統一する。未設定の場合は現在時刻を使う。
-  const createdAt = dayjs(drawing.createdAt || undefined)
-    .tz('Asia/Tokyo')
-    .format('YYYY-MM-DDTHH:mm:ssZ')
-  const image = await uploadDrawingImage(imageBase64)
-
-  try {
-    await setDoc(
-      drawingRef,
-      {
-        uid,
-        theme,
-        imagePublicId: image.publicId,
-        result,
-        createdAt,
-      },
-      { merge: true },
-    )
-  } catch (error) {
-    if (error instanceof FirebaseError && error.code === 'not-found')
+  return withOnlineSave(async () => {
+    const drawingRef = doc(db, 'drawings', drawingId)
+    const snapshot = await getDoc(drawingRef)
+    if (!snapshot.exists())
       throw new Error('作品が見つかりません。ホームからゲームを開始し直してください。')
-    throw error
-  }
+    const drawing = snapshot.data()
+    if (drawing.uid !== uid) throw new Error('この作品には保存できません。')
+    // 開始時刻を保持し、dayjsでJSTの文字列に統一する。未設定の場合は現在時刻を使う。
+    const createdAt = dayjs(drawing.createdAt || undefined)
+      .tz('Asia/Tokyo')
+      .format('YYYY-MM-DDTHH:mm:ssZ')
+    const image = await uploadDrawingImage(imageBase64)
 
-  return { imagePublicId: image.publicId }
+    try {
+      await setDoc(
+        drawingRef,
+        {
+          uid,
+          theme,
+          imagePublicId: image.publicId,
+          result,
+          createdAt,
+        },
+        { merge: true },
+      )
+    } catch (error) {
+      if (error instanceof FirebaseError && error.code === 'not-found')
+        throw new Error('作品が見つかりません。ホームからゲームを開始し直してください。')
+      throw error
+    }
+
+    return { imagePublicId: image.publicId }
+  })
+}
+
+// Firestore writes can remain pending offline. Notify and release the UI on disconnect.
+// A write already queued by the SDK may still synchronize after reconnection.
+export const OFFLINE_SAVE_EVENT = 'offline-save-error'
+export const OFFLINE_SAVE_MESSAGE = 'オフラインです。接続を確認してください'
+
+export async function withOnlineSave<T>(save: () => Promise<T>): Promise<T> {
+  let onOffline: () => void = () => {}
+  const disconnected = new Promise<never>((_, reject) => {
+    onOffline = () => reject(new Error(OFFLINE_SAVE_MESSAGE))
+    window.addEventListener('offline', onOffline)
+  })
+  try {
+    if (!navigator.onLine) throw new Error(OFFLINE_SAVE_MESSAGE)
+    return await Promise.race([save(), disconnected])
+  } catch (error) {
+    if (!navigator.onLine || (error instanceof Error && error.message === OFFLINE_SAVE_MESSAGE)) {
+      window.dispatchEvent(new Event(OFFLINE_SAVE_EVENT))
+    }
+    throw error
+  } finally {
+    window.removeEventListener('offline', onOffline)
+  }
 }
