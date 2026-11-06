@@ -2,6 +2,7 @@ import { FirebaseError, getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { doc, getDoc, getFirestore, setDoc } from 'firebase/firestore'
+import { getFunctions } from 'firebase/functions'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -34,6 +35,7 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)
+export const functions = getFunctions(app, 'asia-northeast1')
 
 let signInPromise: Promise<User> | null = null
 

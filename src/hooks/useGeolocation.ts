@@ -85,6 +85,7 @@ export function useGeolocation(
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           t: Number.isFinite(pos.timestamp) ? pos.timestamp : Date.now(),
+          accuracy: pos.coords.accuracy,
         }
         // 同じ測位結果の再通知を、静止を裏付ける新しい測位として数えない。
         if (lastSampleTimeRef.current !== null && point.t <= lastSampleTimeRef.current) return

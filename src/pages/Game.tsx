@@ -209,9 +209,11 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     try {
       await saveTrail(id, trail)
       navigate(`/result/${id}`)
-    } catch {
+    } catch (error) {
       setSaveError(
-        '軌跡を保存できませんでした。通信環境を確認して、完了ボタンで再試行してください。',
+        error instanceof Error
+          ? error.message
+          : '軌跡を保存できませんでした。通信環境を確認して、完了ボタンで再試行してください。',
       )
       finishing.current = false
       setSaving(false)

@@ -4,12 +4,22 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /drawings/{drawingId} {
       allow create: if request.auth != null
-        && request.resource.data.uid == request.auth.uid;
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasAll(['uid', 'theme', 'trail', 'createdAt', 'serverCreatedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'theme', 'trail', 'createdAt', 'serverCreatedAt'])
+        && request.resource.data.theme == 'りんご'
+        && request.resource.data.trail is list
+        && request.resource.data.trail.size() == 0
+        && request.resource.data.createdAt is string
+        && request.resource.data.createdAt.size() <= 40
+        && request.resource.data.serverCreatedAt == request.time;
       allow read, delete: if request.auth != null
         && resource.data.uid == request.auth.uid;
       allow update: if request.auth != null
         && resource.data.uid == request.auth.uid
-        && request.resource.data.uid == resource.data.uid;
+        && request.resource.data.uid == resource.data.uid
+        // 軌跡・開始時刻・検証結果はクライアントから変更できない。
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['result', 'imagePublicId']);
     }
   }
 }
