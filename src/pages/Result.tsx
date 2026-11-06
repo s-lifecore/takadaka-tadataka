@@ -139,11 +139,27 @@ function DrawingResult({
   const shareText = `${shareTitle} AIスコア: ${result?.score ?? 0}点\n歩いて絵を描くゲーム「高々忠敬」 #高々忠敬`
   const xShareUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText, url: resultUrl })}`
 
+  const shareFile = useMemo(() => {
+    if (!image) return null
+    const bytes = Uint8Array.from(atob(image), (character) => character.charCodeAt(0))
+    return new File([bytes], `drawing-${id}.png`, { type: 'image/png' })
+  }, [image, id])
+  const canShareImage = Boolean(
+    shareFile &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function' &&
+    navigator.canShare({ files: [shareFile] }),
+  )
+
   const shareArtwork = async () => {
     setShareMessage('')
     setSharing(true)
     try {
-      await navigator.share({ title: shareTitle, text: shareText, url: resultUrl })
+      await navigator.share({
+        title: shareTitle,
+        text: `${shareText}\n${resultUrl}`,
+        ...(canShareImage && shareFile ? { files: [shareFile] } : {}),
+      })
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
         setShareMessage('共有できませんでした。XでシェアまたはURLコピーをお試しください。')
@@ -240,15 +256,30 @@ function DrawingResult({
         <footer className="result-actions">
           {result && saved && (
             <>
+              {canShareImage ? (
+                <button
+                  type="button"
+                  className="result-share"
+                  disabled={sharing}
+                  onClick={() => void shareArtwork()}
+                >
+                  {sharing ? '共有中…' : '作品画像と定型文を共有する'}
+                </button>
+              ) : null}
+              <p className="result-route-note">
+                {canShareImage
+                  ? '共有先でXを選ぶと、作品画像と定型文を渡せます。反映内容はXの投稿画面で確認してください。'
+                  : 'この端末では画像付き共有に対応していません。「作品を保存する」で画像を保存し、Xの投稿画面で添付してください。'}
+              </p>
               <a
                 className="result-share"
                 href={xShareUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Xでシェアする
+                Xの投稿画面を開く（定型文のみ）
               </a>
-              {typeof navigator.share === 'function' && (
+              {typeof navigator.share === 'function' && !canShareImage && (
                 <button
                   type="button"
                   className="result-home"
