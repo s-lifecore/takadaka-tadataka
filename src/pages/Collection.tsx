@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { Cloudinary } from '@cloudinary/url-gen'
 import dayjs from 'dayjs'
 import { auth } from '../lib/firebase'
+import { getDrawingImageUrl } from '../lib/cloudinary'
 import { loadSavedDrawings, type SavedDrawing } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function BookIcon() {
   return (
@@ -26,11 +26,7 @@ function BookIcon() {
 
 function Artwork({ drawing }: { drawing: SavedDrawing }) {
   const [failed, setFailed] = useState(false)
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-  const imageUrl =
-    drawing.imagePublicId && cloudName
-      ? new Cloudinary({ cloud: { cloudName } }).image(drawing.imagePublicId).toURL()
-      : null
+  const imageUrl = drawing.imagePublicId ? getDrawingImageUrl(drawing.imagePublicId) : null
   return imageUrl && !failed ? (
     <img
       src={imageUrl}
@@ -154,9 +150,11 @@ export function Collection() {
                   旅の記録 <i aria-hidden="true">✦</i>
                 </p>
               </div>
-              <div className="collection-artwork">
-                <Artwork drawing={drawing} />
-              </div>
+              <Link to={`/result/${drawing.id}`} aria-label={`${drawing.theme}の結果を見る`}>
+                <div className="collection-artwork">
+                  <Artwork drawing={drawing} />
+                </div>
+              </Link>
               <div className="collection-card-info">
                 <div>
                   <p>お題</p>
@@ -171,7 +169,7 @@ export function Collection() {
                 </div>
               </div>
               <div className="collection-card-footer">
-                <p>AIの予想：{drawing.result.guess || '判定なし'}</p>
+                <p>{drawing.result.reason}</p>
                 {dayjs(drawing.savedAt).isValid() ? (
                   <time dateTime={drawing.savedAt} aria-label="保存日">
                     {dayjs(drawing.savedAt).format('YYYY.MM.DD')}
