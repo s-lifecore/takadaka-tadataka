@@ -138,6 +138,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     error: gpsError,
     start: startGPS,
     stop: stopGPS,
+    retry: retryGPS,
     pause: pauseGPS,
     resume: resumeGPS,
   } = useGeolocation(initialTrail)
@@ -149,6 +150,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const [saveError, setSaveError] = useState<string | null>(null)
   const [minimumGPSLoading, setMinimumGPSLoading] = useState(true)
   const [gpsLoadingDismissed, setGPSLoadingDismissed] = useState(false)
+  const [gpsRetryCount, setGPSRetryCount] = useState(0)
   const showGPSLoading =
     !gpsLoadingDismissed &&
     (isLocating || minimumGPSLoading) &&
@@ -248,6 +250,37 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             <Timer remaining={remaining} />
           </div>
         </div>
+        {(gpsError || (gpsRetryCount > 0 && isLocating)) && (
+          <div
+            className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900"
+            role={gpsError ? 'alert' : 'status'}
+            aria-atomic="true"
+          >
+            {gpsRetryCount > 0 && (
+              <p>
+                {isLocating
+                  ? `位置情報を再取得しています（再試行${gpsRetryCount}回目）…`
+                  : `再試行${gpsRetryCount}回目：位置情報を取得できませんでした。`}
+              </p>
+            )}
+            {gpsError && <p>{gpsError}</p>}
+            <p>操作するときは、安全な場所で立ち止まってください。</p>
+            <button
+              type="button"
+              onClick={() => {
+                stopTimer()
+                setGPSRetryCount((count) => count + 1)
+                setGPSLoadingDismissed(false)
+                retryGPS()
+              }}
+              disabled={isLocating || paused || saving || expired}
+              className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
+            >
+              {isLocating ? '位置情報を再取得中…' : '位置情報の取得を再試行'}
+            </button>
+            {paused && <p>一時停止中です。「再開する」を押してから再試行してください。</p>}
+          </div>
+        )}
         {!saving && !saveError && !expired && (
           <div className="bg-amber-50 text-amber-950 text-sm px-4 py-2" role="status">
             {wakeLockStatus === 'active' ? (
@@ -305,7 +338,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
                 <span className="walking-gps-spinner" aria-hidden="true" />
                 <h2>位置情報を取得しています</h2>
                 <p>立ち止まって、そのままお待ちください。</p>
-                <p>取得に20〜40秒ほどかかる場合があります。</p>
+                <p>15秒ほどで取得できない場合は、再試行の案内を表示します。</p>
                 <p className="walking-gps-loading-hint">
                   位置情報の利用を求められたら、許可してください。
                 </p>
@@ -367,11 +400,6 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             </div>
           )}
         </section>
-        {gpsError && (
-          <p className="walking-error" role="alert">
-            位置情報を取得できません：{gpsError}
-          </p>
-        )}
         {saveError && (
           <p className="walking-error" role="alert">
             {saveError}
