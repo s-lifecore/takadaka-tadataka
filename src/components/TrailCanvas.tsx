@@ -24,9 +24,15 @@ export function TrailCanvas({ trail, size = 512, onReady }: Props) {
       maxLng = Math.max(...lngs)
     const pad = 40
 
-    const toX = (lng: number) => pad + ((lng - minLng) / (maxLng - minLng || 1)) * (size - pad * 2)
-    const toY = (lat: number) =>
-      size - pad - ((lat - minLat) / (maxLat - minLat || 1)) * (size - pad * 2)
+    // 緯度経度を局所的な距離に換算し、縦横に同じ倍率を適用する。
+    const centerLat = (minLat + maxLat) / 2
+    const centerLng = (minLng + maxLng) / 2
+    const longitudeScale = Math.cos((centerLat * Math.PI) / 180)
+    const width = (maxLng - minLng) * longitudeScale
+    const height = maxLat - minLat
+    const scale = (size - pad * 2) / (Math.max(width, height) || 1)
+    const toX = (lng: number) => size / 2 + (lng - centerLng) * longitudeScale * scale
+    const toY = (lat: number) => size / 2 - (lat - centerLat) * scale
 
     ctx.clearRect(0, 0, size, size)
     ctx.fillStyle = '#fff'

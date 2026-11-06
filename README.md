@@ -13,13 +13,13 @@
 
 ## 役割分担
 
-| 役割                    | 担当              | 主な責務                                                                     |
-| ----------------------- | ----------------- | ---------------------------------------------------------------------------- |
-| PM                      | @s-lifecore       | スコープ管理、画面遷移設計、実地テスト、発表                                 |
-| バックエンド            | @rikut0904        | Firebase設定、Firestore設計、セキュリティルール、Gemini呼び出し、GPSサポート |
-| フロントA（地図・GPS）  | @kouyuu0707       | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告                     |
-| フロントB（画面・描画） | @katsuki812       | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算                          |
-| AI判定                  | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証                               |
+| 役割 | 担当 | 主な責務 |
+|------|------|----------|
+| PM | @s-lifecore | スコープ管理、画面遷移設計、実地テスト、発表 |
+| バックエンド | @rikut0904 | Firebase設定、Firestore設計、セキュリティルール、Groq API呼び出し、GPSサポート |
+| フロントA（地図・GPS） | @kouyuu0707 | 地図表示、軌跡描画、ノイズ除去、タイマー、歩きスマホ警告 |
+| フロントB（画面・描画） | @katsuki812 | 各画面UI、Canvas→PNG変換、PWA化、歩数・カロリー概算 |
+| AI判定 | @koki-nakagawa124 | ルーブリック設計、プロンプト調整、採点ブレ検証 |
 
 ---
 
@@ -95,7 +95,7 @@ Firebase Hosting は `firebase.json` のリライトで各URLへの直接アク�
 - [x] お題の表示（固定：「りんご」）
 - [x] 15分のカウントダウンタイマー
 - [x] 軌跡を Canvas で線画に変換してPNG化
-- [x] Gemini API で「何に見えるか」を判定
+- [x] Groq API で「何に見えるか」を判定
 - [x] スコア・推測理由の表示
 - [x] 結果の Firestore 保存
 
@@ -125,7 +125,7 @@ Firebase Hosting は `firebase.json` のリライトで各URLへの直接アク�
 | DB | Firebase Firestore | 結果を保存 |
 | ストレージ | Cloudinary | 画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
-| AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
+| AI判定 | Groq API（サーバー経由） | 画像入力対応・JSON構造化出力 |
 
 ---
 
@@ -205,8 +205,10 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_CLOUDINARY_CLOUD_NAME=...
 VITE_CLOUDINARY_UPLOAD_PRESET=...
-VITE_GEMINI_API_KEY=...
+GROQ_API_KEY=...
 ```
+
+`GROQ_API_KEY` はGroqで発行したAPIキーです。画像対応モデルへのアクセス権とAPIの利用残高も確認してください。秘密キーには `VITE_` を付けません。Firebase設定は認証・保存用として引き続き使用できますが、採点には不要です。
 
 ### 開発サーバー起動
 
@@ -215,6 +217,33 @@ npm run dev
 ```
 
 > スマホ実機で確認する場合：`npm run dev -- --host` でLANのIPにアクセス（HTTPSが必要なAPIは `localhost` のみ動作）
+
+### ngrok経由でスマホ実機から確認
+
+ngrokをインストールし、認証トークンを設定しておきます。
+
+1. ngrokで割り当てられたホスト名を `.env.local` に追加します（`https://` や末尾の `/` は不要）。
+
+   ```env
+   NGROK_HOST=your-domain.ngrok-free.app
+   ```
+
+2. 開発サーバーを起動します。設定を変更した場合は再起動してください。
+
+   ```bash
+   npm run dev
+   ```
+
+3. 別のターミナルで同じホスト名のトンネルを起動します。
+
+   ```bash
+   ngrok http --url=https://your-domain.ngrok-free.app 5173
+   ```
+
+4. スマホでngrokのHTTPS URLを開き、位置情報や傾きセンサーの利用を許可します。
+
+開発サーバーはポート5173を使用します。使用中の場合はエラーになるため、先にそのポートを空けてください。
+`NGROK_HOST` は開発サーバーの許可ホスト設定にのみ使用し、クライアントには公開しません。
 
 ### Firebase Hostingへのデプロイ
 
@@ -231,7 +260,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
 VITE_CLOUDINARY_CLOUD_NAME
 VITE_CLOUDINARY_UPLOAD_PRESET
-VITE_GEMINI_API_KEY
+GROQ_API_KEY
 ```
 
 ローカルからはFirebase CLIでログインしたあと、環境別ファイルを作成してデプロイする。`.env.*.local` はGitに含まれない。
@@ -240,7 +269,7 @@ VITE_GEMINI_API_KEY
 npm install
 npx --yes firebase-tools@15.34.2 login
 cp .env.example .env.prev.local
-# .env.prev.local に prev 用のFirebase / Cloudinary / Gemini設定を記入
+# .env.prev.local に prev 用のFirebase / Cloudinary / Groq設定を記入
 npm run deploy:hosting -- prev
 ```
 
@@ -266,7 +295,7 @@ npm run dev -- --port 5173 --strictPort
 ngrok http 5173
 ```
 
-ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。現在の確認用ホスト `chef-unicycle-nanometer.ngrok-free.dev` は `vite.config.ts` の `server.allowedHosts` に登録済みです。URLが変わった場合は、この配列を新しいホスト名に更新してください。
+ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。現在の確認用ホスト `chef-unicycle-nanometer.ngrok-free.dev` は `vite.config.ts` の `server.allowedHosts` に登録済みです。別のURLを使う場合は、上記の手順に従って `.env.local` または `.env.prev.local` の `NGROK_HOST` にホスト名を設定し、開発サーバーを再起動してください。
 
 1. ngrokの確認画面が出た場合は「Visit Site」で進みます。
 2. ゲームを開始し、位置情報を許可します。「傾きセンサーを有効にする」が表示された場合は、ボタンを押して許可します。
@@ -275,7 +304,29 @@ ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで
 
 確認中は開発サーバーとngrokの両方を起動したままにしてください。終了時はそれぞれのターミナルで `Ctrl+C` を押します。コードを変更すると開発サーバー経由で反映されます。
 
+
 ---
+
+## 採点APIの本番運用
+
+開発・previewではViteが `/api/judge-drawing` を処理します。静的ビルドにはAPIサーバーや秘密キーは含まれません。
+
+本番用APIはNode.js 22.9以降（推奨24）で起動できます。
+
+```bash
+npm run start:api
+```
+
+環境変数は `GROQ_API_KEY`、`GROQ_MODEL`（既定 `qwen/qwen3.8-27b`）、必要に応じて `PORT`（既定3001）、`HOST`（既定127.0.0.1）です。本番ではデプロイ先のシークレット設定を使用してください。コンテナでは必要に応じて `HOST=0.0.0.0` にします。
+
+Firebase Hosting等から公開する場合は、APIをCloud Run等に配置し、同じオリジンの `/api/judge-drawing` をAPIへ転送してください。SPAへの書き換えよりAPI転送を優先します。静的ファイルをアップロードするだけでは採点できません。公開前にデプロイ先で認証・レート制限を設定してください。現時点のAPIは開発・チーム検証用で、利用者認証は実装していません。
+
+Groqの画像入力を使用し、採点結果は `{ score, reason }` のままです。画像は採点のためGroqに送信されます。最大3MBのPNGを受け付け、一時的な5xxと通信失敗だけ最大2回再試行します。429、認証失敗、不正な回答は再試行しません。
+
+```bash
+npm run test:ai
+```
+
 
 ## 注意事項
 
@@ -299,7 +350,7 @@ src/
 │   └── useTimer        # 残り時間管理（フロントA）
 ├── lib/
 │   ├── firebase    # Firebase 初期化・CRUD（バックエンド）
-│   └── gemini      # Gemini API 呼び出し（AI判定）
+│   └── grok        # 採点サーバー呼び出し（AI判定）
 └── pages/
     ├── Home        # ホーム画面（フロントB）
     ├── Game        # プレイ中画面（フロントA中心）
@@ -311,6 +362,17 @@ src/
 - GPSは環境によって精度が大きく変わる（建物の影・地下・トンネルなど）
 - GPS 5桁（例：35.12345, 139.12345）で初期検証
 
+### Groqによる画像判定
+
+`.env.local` に設定し、開発サーバーを再起動します。
+
+```dotenv
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=qwen/qwen3.8-27b
+```
+
+採点にはGroqを使用します。キーはサーバー専用で、`VITE_` を付けません。
+`/ai-test.html` で検証できます。画像対応とJSON出力の公式仕様: [Groq Vision](https://console.groq.com/docs/vision)。
 ## ページ一覧とURL
 
 | URL | 画面 |
@@ -329,3 +391,15 @@ Firebase Anonymous Auth と Firestore の読み書き権限が必要です。
 Firebase Hosting の直接アクセスは `firebase.json` のリライトで対応します。
 
 お題画面: `/playalone` → `pages/Theme.tsx`
+
+### 採点APIのCloud Run設定
+
+`firebase.json` は `/api/**` を `asia-northeast1` のCloud Runサービス `drawing-scoring` へ転送します。Hostingを公開する前に、同じFirebaseプロジェクトへAPIを配置してください。
+
+```bash
+gcloud run deploy drawing-scoring --source . --region asia-northeast1 --project YOUR_PROJECT_ID --allow-unauthenticated --timeout 120 --set-secrets GROQ_API_KEY=GROQ_API_KEY:latest --set-env-vars GROQ_MODEL=qwen/qwen3.8-27b
+```
+
+Secret Managerに `GROQ_API_KEY` を登録し、Cloud Runの実行サービスアカウントにそのシークレットの参照権限を付けてください。Dockerのビルド対象はserverのみで、ローカルの環境変数ファイルは含まれません。APIを更新するときもCloud Runを再デプロイします。HostingのデプロイだけではAPIは更新されません。
+
+作品帳は現在ログイン中の匿名ユーザーの採点済み作品を表示します。別ブラウザやサイトデータの削除後には、以前の匿名ユーザーの作品は表示されません。
