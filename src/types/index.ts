@@ -5,18 +5,11 @@ export type Position = {
 
 export type TrailPoint = Position & {
   t: number // Unix timestamp (ms)
+  accuracy?: number // GPSの測位誤差(m)。新規保存時はサーバーで必須として検証する。
 }
 
+// AIの採点結果
 export type AIResult = {
-  score: number // 0-100
-  guess: string
-  reason: string
-}
-
-export type Drawing = {
-  uid: string
-  theme: string
-  imagePublicId: string
-  result: AIResult
-  createdAt: string
+  score: number // 0～100の一致度（%）。小数点以下5桁まで
+  reason: string // AIの採点理由
 }

@@ -72,17 +72,21 @@ export function Home() {
   const navigate = useNavigate()
   return (
     <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
-      <header className="home-top flex flex-wrap items-center justify-between gap-3">
+      <header className="home-top flex items-center justify-between gap-3">
         <span className="home-badge">
           <Icon kind="compass" />
           旅のスケッチブック
         </span>
         <nav className="home-auth" aria-label="アカウント">
-          <a href="#" className="home-signin">
-            サインイン
+          <a href="#" className="home-signin" aria-label="サインイン">
+            <span className="material-icons" aria-hidden="true">
+              person_add
+            </span>
           </a>
-          <a href="#" className="home-login">
-            ログイン
+          <a href="#" className="home-login" aria-label="ログイン">
+            <span className="material-icons" aria-hidden="true">
+              login
+            </span>
           </a>
         </nav>
       </header>

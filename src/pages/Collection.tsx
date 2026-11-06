@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import { auth } from '../lib/firebase'
 import { loadSavedDrawings, type SavedDrawing } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function BookIcon() {
   return (
@@ -136,6 +136,9 @@ export function Collection() {
             </button>
           </div>
         )}
+        {status === 'ready' && drawings.length === 0 && (
+          <p className="collection-state">保存した作品はまだありません。</p>
+        )}
         {status === 'ready' &&
           drawings.map((drawing, index) => (
             <article
@@ -149,9 +152,11 @@ export function Collection() {
                   旅の記録 <i aria-hidden="true">✦</i>
                 </p>
               </div>
-              <div className="collection-artwork">
-                <Artwork drawing={drawing} />
-              </div>
+              <Link to={`/result/${drawing.id}`} aria-label={`${drawing.theme}の結果を見る`}>
+                <div className="collection-artwork">
+                  <Artwork drawing={drawing} />
+                </div>
+              </Link>
               <div className="collection-card-info">
                 <div>
                   <p>お題</p>
@@ -166,7 +171,7 @@ export function Collection() {
                 </div>
               </div>
               <div className="collection-card-footer">
-                <p>AIの予想：{drawing.result.guess || '判定なし'}</p>
+                <p>{drawing.result.reason}</p>
                 {dayjs(drawing.savedAt).isValid() ? (
                   <time dateTime={drawing.savedAt} aria-label="保存日">
                     {dayjs(drawing.savedAt).format('YYYY.MM.DD')}
