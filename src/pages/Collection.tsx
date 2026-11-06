@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { Cloudinary } from '@cloudinary/url-gen'
 import dayjs from 'dayjs'
 import { auth } from '../lib/firebase'
+import { getDrawingImageUrl } from '../lib/cloudinary'
 import { loadSavedDrawings, type SavedDrawing } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { Link, useNavigate } from 'react-router-dom'
@@ -26,11 +26,7 @@ function BookIcon() {
 
 function Artwork({ drawing }: { drawing: SavedDrawing }) {
   const [failed, setFailed] = useState(false)
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-  const imageUrl =
-    drawing.imagePublicId && cloudName
-      ? new Cloudinary({ cloud: { cloudName } }).image(drawing.imagePublicId).toURL()
-      : null
+  const imageUrl = drawing.imagePublicId ? getDrawingImageUrl(drawing.imagePublicId) : null
   return imageUrl && !failed ? (
     <img
       src={imageUrl}
