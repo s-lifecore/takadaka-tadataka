@@ -5,9 +5,15 @@ import { Collection } from './pages/Collection'
 import { Result } from './pages/Result'
 import { Theme } from './pages/Theme'
 import { Rules } from './pages/Rules'
+import { UnsupportedDevice } from './pages/UnsupportedDevice'
 
 export function App() {
   const { pathname } = useLocation()
+
+  if (!('geolocation' in navigator)) {
+    return <UnsupportedDevice />
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
