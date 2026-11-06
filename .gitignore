@@ -5,3 +5,4 @@ dist
 
 .firebase
 *.tsbuildinfo
+firestore-debug.log
