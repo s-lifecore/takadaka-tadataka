@@ -13,6 +13,17 @@ import type { TrailPoint } from '../types'
 const GAME_SECONDS = 15 * 60
 const GPS_LOADING_MIN_MS = 5000
 
+function useActivationError(ready: boolean, attempt: number) {
+  const [elapsed, setElapsed] = useState(false)
+  useEffect(() => {
+    setElapsed(false)
+    if (ready) return
+    const timeout = setTimeout(() => setElapsed(true), 5000)
+    return () => clearTimeout(timeout)
+  }, [ready, attempt])
+  return !ready && elapsed
+}
+
 export function Game() {
   const { id } = useParams<{ id: string }>()
   return id ? <LoadGame key={id} id={id} /> : <StartCountdown />
@@ -124,12 +135,15 @@ function WalkingIcon({ name }: { name: 'compass' | 'clock' | 'pause' | 'play' | 
 function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoint[] }) {
   const navigate = useNavigate()
   const [paused, setPaused] = useState(false)
+  const [wakeLockRetryCount, setWakeLockRetryCount] = useState(0)
+  const [motionRetryCount, setMotionRetryCount] = useState(0)
   const {
     isShaking,
     isStationary: isMotionStationary,
     status: motionStatus,
     isRequesting,
     requestPermission,
+    isReady: motionReady,
   } = useDeviceOrientation()
   const {
     trail,
@@ -144,6 +158,8 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   const showWalkingWarning = isShaking
   const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
   const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
+  const showWakeLockError = useActivationError(wakeLockStatus === 'active', wakeLockRetryCount)
+  const showMotionError = useActivationError(motionReady, motionRetryCount)
   const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -172,7 +188,18 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     }
   }, [startGPS, stopGPS, stopTimer, acquire, release])
   useEffect(() => {
-    if (showGPSLoading || isLocating || !currentPosition || gpsError || paused || saving || expired)
+    if (
+      showGPSLoading ||
+      isLocating ||
+      !currentPosition ||
+      gpsError ||
+      !motionReady ||
+      isRequesting ||
+      wakeLockStatus !== 'active' ||
+      paused ||
+      saving ||
+      expired
+    )
       stopTimer()
     else startTimer()
   }, [
@@ -180,6 +207,9 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     isLocating,
     currentPosition,
     gpsError,
+    motionReady,
+    isRequesting,
+    wakeLockStatus,
     paused,
     saving,
     expired,
@@ -248,48 +278,61 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             <Timer remaining={remaining} />
           </div>
         </div>
-        {!saving && !saveError && !expired && (
-          <div className="bg-amber-50 text-amber-950 text-sm px-4 py-2" role="status">
-            {wakeLockStatus === 'active' ? (
-              <p>自動消灯の防止：有効</p>
-            ) : wakeLockStatus === 'requesting' || wakeLockStatus === 'idle' ? (
-              <p>自動消灯の防止：確認中…</p>
-            ) : (
-              <>
-                <p>{wakeLockError ?? '自動消灯の防止が解除されました。'}</p>
-                <p>省電力モードやブラウザの設定を確認してください。</p>
-                {wakeLockStatus !== 'unavailable' && (
-                  <button onClick={acquire} className="mt-1 underline">
-                    自動消灯の防止を再試行
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        )}
-        {(motionStatus === 'permission-required' ||
-          motionStatus === 'denied' ||
-          motionStatus === 'error') && (
+        {!saving &&
+          !saveError &&
+          !expired &&
+          (showWakeLockError || (wakeLockRetryCount > 0 && wakeLockStatus === 'requesting')) && (
+            <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
+              <p>
+                {wakeLockStatus === 'requesting'
+                  ? '自動消灯の防止を再試行しています…'
+                  : (wakeLockError ?? '自動消灯の防止を5秒以内に有効にできませんでした。')}
+              </p>
+              <p>省電力モードやブラウザの設定を確認してください。</p>
+              <p>自動消灯の防止が無効のため、残り時間のカウントを停止しています。</p>
+              {wakeLockStatus !== 'unavailable' && (
+                <button
+                  onClick={() => {
+                    setWakeLockRetryCount((count) => count + 1)
+                    acquire()
+                  }}
+                  disabled={wakeLockStatus === 'requesting'}
+                  className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
+                >
+                  {wakeLockStatus === 'requesting' ? '再試行中…' : '自動消灯の防止を再試行'}
+                </button>
+              )}
+            </div>
+          )}
+        {(showMotionError || (motionRetryCount > 0 && isRequesting)) &&
+          motionStatus !== 'unsupported' && (
+            <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
+              <p>
+                {isRequesting
+                  ? '加速度センサーの利用を再試行しています…'
+                  : motionStatus === 'denied'
+                    ? '加速度センサーの利用が拒否されています。ブラウザの設定で許可してください。'
+                    : '加速度センサーを有効にできませんでした。もう一度お試しください。'}
+              </p>
+              <p>加速度センサーが無効のため、残り時間のカウントを停止しています。</p>
+              <button
+                onClick={() => {
+                  setMotionRetryCount((count) => count + 1)
+                  void requestPermission()
+                }}
+                disabled={isRequesting}
+                className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
+              >
+                {isRequesting ? '再試行中…' : '加速度センサーを再試行'}
+              </button>
+            </div>
+          )}
+        {showMotionError && motionStatus === 'unsupported' && (
           <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
             <p>
-              {motionStatus === 'denied'
-                ? '加速度センサーの利用が拒否されています。ブラウザの設定で許可してください。'
-                : motionStatus === 'error'
-                  ? '加速度センサーを有効にできませんでした。もう一度お試しください。'
-                  : '歩きスマホ警告のため、端末の加速度センサーの利用を許可してください。'}
+              この環境では加速度センサーを利用できないため、地図の表示を制限しています。HTTPS対応のスマートフォンでご利用ください。
             </p>
-            <button
-              onClick={requestPermission}
-              disabled={isRequesting}
-              className="mt-2 rounded bg-amber-900 px-3 py-2 text-white disabled:opacity-50"
-            >
-              {isRequesting ? '確認中…' : '加速度センサーを有効にする'}
-            </button>
-          </div>
-        )}
-        {motionStatus === 'unsupported' && (
-          <div className="mb-3 rounded bg-amber-100 p-3 text-sm text-amber-900" role="status">
-            この環境では加速度センサーを利用できないため、地図の表示を制限しています。HTTPS対応のスマートフォンでご利用ください。
+            <p>加速度センサーが無効のため、残り時間のカウントを停止しています。</p>
           </div>
         )}
         <section className="walking-map" aria-label="現在地と歩いた軌跡の地図">
