@@ -130,7 +130,7 @@ export function Collection() {
         )}
         {status === 'error' && (
           <div className="collection-state" role="alert">
-            <p>作品を取得できませんでした。通信環境を確認してください。</p>
+            <p>作品を取得できませんでした。</p>
             <button type="button" onClick={() => setAttempt((value) => value + 1)}>
               もう一度読み込む
             </button>
