@@ -6,6 +6,7 @@ import type { Position, TrailPoint } from '../types'
 type Props = {
   trail: TrailPoint[]
   currentPosition?: Position | null
+  interactive?: boolean
   fitTrail?: boolean
 }
 
@@ -32,7 +33,7 @@ function FitTrail({ trail }: { trail: TrailPoint[] }) {
   return null
 }
 
-export function MapView({ trail, currentPosition, fitTrail = false }: Props) {
+export function MapView({ trail, currentPosition, interactive = true, fitTrail = false }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
   const center = currentPosition ?? trail[trail.length - 1] ?? INITIAL_CENTER
 
@@ -42,6 +43,12 @@ export function MapView({ trail, currentPosition, fitTrail = false }: Props) {
       zoom={17}
       className="w-full h-full"
       zoomControl={false}
+      dragging={interactive}
+      touchZoom={interactive}
+      scrollWheelZoom={interactive}
+      doubleClickZoom={interactive}
+      boxZoom={interactive}
+      keyboard={interactive}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
