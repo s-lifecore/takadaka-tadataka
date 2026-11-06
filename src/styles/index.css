@@ -24,19 +24,27 @@ body,
   font-size: 24px;
   line-height: 1;
 }
-.home-badge {
+.home-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
+}
+.home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: #eee0c8;
   border-radius: 24px;
-  padding: 7px 13px;
+  padding: 5px 12px 5px 8px;
   font-size: 13px;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 .home-badge .home-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
 }
 .home-auth {
   display: flex;
@@ -236,6 +244,10 @@ body,
   color: #8e7b65;
 }
 .home-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+  margin-top: 18px;
 }
 .home-links button {
   display: flex;
@@ -340,18 +352,19 @@ body,
 /* Match the available viewport instead of framing every screen as a phone. */
 .home-page {
   width: 100%;
-  max-width: none;
   min-height: 100dvh;
   padding-right: max(22px, env(safe-area-inset-right));
   padding-left: max(22px, env(safe-area-inset-left));
 }
 @media (min-width: 600px) and (max-width: 899px) {
   .home-page {
+    max-width: none;
     padding: 30px clamp(40px, 12vw, 110px);
   }
 }
 @media (min-width: 900px) {
   .home-page {
+    display: grid;
     width: 100%;
     max-width: none;
     min-height: 100dvh;
