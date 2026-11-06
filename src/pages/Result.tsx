@@ -6,7 +6,7 @@ import { Judgement } from './Judgement'
 import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/groq'
-import { TrailMapImage } from '../components/MapView'
+import { MapView } from '../components/MapView'
 import type { AIResult, TrailPoint } from '../types'
 
 const MIN_JUDGEMENT_MS = 3000
@@ -158,7 +158,9 @@ function DrawingResult({
             </p>
           </div>
           {trail.length > 0 ? (
-            <TrailMapImage trail={trail} />
+            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
+              <MapView trail={trail} fitTrail interactive={false} />
+            </div>
           ) : (
             <p className="result-message">記録された歩行経路がありません。</p>
           )}
