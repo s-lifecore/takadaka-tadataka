@@ -5,9 +5,8 @@ export function UnsupportedDevice() {
         <span className="material-icons unsupported-icon" aria-hidden="true">
           location_off
         </span>
-        <h1>この端末ではご利用できません</h1>
-        <p>本アプリはGPS機能を持つスマートフォンでのご利用を推奨しています。</p>
-        <p>位置情報に対応した端末でお試しください。</p>
+        <h1>このデバイスじゃ冒険できないよ！</h1>
+        <p>GPSを持ったスマートフォンで、歩いて絵を描く冒険に出かけよう！</p>
       </div>
     </div>
   )

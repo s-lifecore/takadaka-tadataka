@@ -23,7 +23,7 @@ export function App() {
           <span className="material-icons" aria-hidden="true">
             location_off
           </span>
-          このデバイスでは歩きながら絵を描くことができません。スマートフォンでお試しください。
+          このデバイスじゃ歩いて絵が描けないよ。スマートフォンで冒険してみよう！
         </div>
       )}
       <Routes>
