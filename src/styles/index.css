@@ -352,10 +352,14 @@ body:has(.home-page) {
 
 /* Match the available viewport instead of framing every screen as a phone. */
 .home-page {
-  width: 100%;
+  width: 90%;
+  max-width: 378px;
   min-height: 100dvh;
-  padding-right: max(22px, env(safe-area-inset-right));
-  padding-left: max(22px, env(safe-area-inset-left));
+  margin-left: auto;
+  margin-right: auto;
+  padding-right: 20px;
+  padding-left: 20px;
+  overflow-x: clip;
 }
 @media (min-width: 600px) and (max-width: 899px) {
   .home-page {
