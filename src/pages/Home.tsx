@@ -79,10 +79,14 @@ export function Home() {
         </span>
         <nav className="home-auth" aria-label="アカウント">
           <a href="#" className="home-signin" aria-label="サインイン">
-            <span className="material-icons" aria-hidden="true">person_add</span>
+            <span className="material-icons" aria-hidden="true">
+              person_add
+            </span>
           </a>
           <a href="#" className="home-login" aria-label="ログイン">
-            <span className="material-icons" aria-hidden="true">login</span>
+            <span className="material-icons" aria-hidden="true">
+              login
+            </span>
           </a>
         </nav>
       </header>
