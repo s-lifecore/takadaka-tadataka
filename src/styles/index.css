@@ -1769,3 +1769,45 @@ body:has(.theme-page) {
 .result-actions button:active:not(:disabled) {
   transform: translateY(2px);
 }
+.error-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 32px 20px;
+  background: #fffaf0;
+  color: #594331;
+}
+.error-content {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.error-content h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+.error-content p {
+  margin: 16px 0 24px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.error-content button {
+  min-height: 48px;
+  padding: 12px 24px;
+  border: 1.5px solid #aa6332;
+  border-radius: 17px;
+  background: #d98a4f;
+  color: #fffaf0;
+  font-weight: 700;
+  box-shadow: 0 4px 0 #9c572e;
+  cursor: pointer;
+}
+.error-content button:focus-visible {
+  outline: 3px solid #936037;
+  outline-offset: 4px;
+}
+.error-content button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #9c572e;
+}
