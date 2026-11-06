@@ -82,6 +82,8 @@ function DrawingResult({
   const [image, setImage] = useState<string | null>(null)
   const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
+  const [shareMessage, setShareMessage] = useState('')
+  const [sharing, setSharing] = useState(false)
   const requested = useRef(false)
   const distanceKm = useMemo(
     () =>
@@ -130,6 +132,35 @@ function DrawingResult({
     link.href = `data:image/png;base64,${image}`
     link.download = `drawing-${id}.png`
     link.click()
+  }
+
+  const resultUrl = new URL(`/result/${encodeURIComponent(id)}`, window.location.origin).href
+  const shareTitle = `お題「${theme}」に挑戦！`
+  const shareText = `${shareTitle} AIスコア: ${result?.score ?? 0}点\n歩いて絵を描くゲーム「高々忠敬」 #高々忠敬`
+  const xShareUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText, url: resultUrl })}`
+
+  const shareArtwork = async () => {
+    setShareMessage('')
+    setSharing(true)
+    try {
+      await navigator.share({ title: shareTitle, text: shareText, url: resultUrl })
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setShareMessage('共有できませんでした。XでシェアまたはURLコピーをお試しください。')
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  const copyResultUrl = async () => {
+    setShareMessage('')
+    try {
+      await navigator.clipboard.writeText(resultUrl)
+      setShareMessage('URLをコピーしました。')
+    } catch {
+      setShareMessage('URLをコピーできませんでした。ブラウザのアドレス欄からコピーしてください。')
+    }
   }
 
   if (judging) {
@@ -207,6 +238,34 @@ function DrawingResult({
         </section>
 
         <footer className="result-actions">
+          {result && saved && (
+            <>
+              <a
+                className="result-share"
+                href={xShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Xでシェアする
+              </a>
+              {typeof navigator.share === 'function' && (
+                <button
+                  type="button"
+                  className="result-home"
+                  disabled={sharing}
+                  onClick={() => void shareArtwork()}
+                >
+                  {sharing ? '共有中…' : '共有する'}
+                </button>
+              )}
+              <button type="button" className="result-home" onClick={() => void copyResultUrl()}>
+                URLをコピーする
+              </button>
+              <p role="status" aria-live="polite">
+                {shareMessage}
+              </p>
+            </>
+          )}
           <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
             作品を保存する
           </button>
