@@ -28,9 +28,18 @@ main        ← 動くものだけ置く。直接 push 禁止
 ```bash
 git clone git@github.com:s-lifecore/takadaka-tadataka.git
 cd takadaka-tadataka
-npm install
-cp .env.example .env.prev.local   # Firebaseキーを記入（バックエンド担当から受け取る）
+cp .env.example .env.prev.local   # Clerk、FirebaseプロジェクトID、Cloudinary、Geminiを記入
+# Functionsのローカル設定は functions/.env.example を
+# functions/.env.prev.local にコピーして記入
 ```
+
+ローカルの統合確認は次で行います。
+
+```bash
+make up
+```
+
+`make up`は`.env.prev.local`と`functions/.env.prev.local`を読み取り、Docker Compose内でViteとFirebase Emulatorを起動します。ホスト側のNode.js、Java、Firebase CLIは不要です。
 
 main ブランチを手元に持ってくる：
 
@@ -118,7 +127,7 @@ git commit
 
 - `main` に直接 `git push` ❌
 - `git push --force` ❌（チームメンバーの履歴が消える）
-- `node_modules` や `.env.prev.local` をコミット ❌（`.gitignore` で除外済み）
+- `node_modules` や `.env*.local` をコミット ❌（`.gitignore` で除外済み）
 
 ---
 

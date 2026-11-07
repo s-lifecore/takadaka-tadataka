@@ -19,15 +19,27 @@
 - Tailwind CSS
 - 地図と軌跡表示: Leaflet / react-leaflet
 - GPS: ブラウザの Geolocation API
-- 認証・データ保存: Firebase Anonymous Auth、Firestore、Cloudinary
+- 認証: Clerk
+- API・データ保存: Firebase Functions、Firestore Admin SDK、Cloudinary
 - AI判定: Firebase AI Logic 経由の Gemini API
 - 一時的なオフライン保存: Dexie.js（導入予定）
 
-依存関係をインストールして開発サーバーを起動します。
+開発サーバーとEmulatorはDocker Composeで起動します。ホスト側にNode.js、Firebase CLI、Javaをインストールする必要はありません。
 
 ```bash
-npm install
-npm run dev
+make up
+```
+
+`make up`はフロントの`.env.<VITE_MODE>.local`と、Functionsの`functions/.env.<VITE_MODE>.local`を使用します。実際のSecret値はこれらのlocalファイルまたはGHAのEnvironment Secretにだけ置き、コミットしないでください。
+
+Functionsは`functions/src/**/*.ts`を正本とし、`make up`のDockerコンテナ内TypeScript監視ビルドでEmulatorへ反映します。`functions/lib`は生成物です。
+
+Docker内のViteは`/api`をFunctions Emulatorへプロキシします。ngrokでスマートフォンから確認するときは`make up`の後に`ngrok http 5173`を実行し、Functionsの5001番ポートを直接公開しないでください。
+
+スマートフォンなど同一LANの端末から確認する場合は、次を使用します。
+
+```bash
+make up
 ```
 
 **新しいファイルを作成するとき**は、まず @README.md の「ページ一覧とURL」「ディレクトリ構成」セクションを読み、追加するファイルがプロジェクトの構造・命名規則・画面設計と整合しているかを確認してから着手してください。整合していない場合は、作業を開始する前にユーザーに確認してください。
@@ -42,14 +54,15 @@ npm run build
 
 いずれかでエラーが出た場合は、コミットせずに修正してから再度チェックしてください。
 
-スマートフォンを同じLANから確認する場合は、`npm run dev -- --host`を使用します。ブラウザの権限、HTTPS要件、GPSの精度、実際のFirebase・Geminiとの通信は別途確認が必要です。ビルド成功だけでは、これらの動作を保証できません。
+ブラウザの権限、HTTPS要件、GPSの精度、実際のFirebase Functions・Firestore・Cloudinary・Geminiとの通信は別途確認が必要です。ビルド成功だけでは、これらの動作を保証できません。
 
 ## ソースコードの構成
 
 - `src/types/`: `TrailPoint`や`AIResult`などの共通型
 - `src/components/`: 地図、軌跡キャンバス、タイマーなどの再利用可能なUI
 - `src/hooks/`: GPSやタイマーなど、ブラウザAPIを扱う状態管理
-- `src/lib/`: FirebaseとGeminiの連携処理
+- `src/lib/`: Functions API、Cloudinary表示、Geminiの連携処理
+- `functions/src/`: Clerk検証、Firestore、Cloudinary保存、HTTPルート
 - `src/pages/`: Home、Game、Resultの各画面
 
 ビジネスロジックは適切なフックまたはライブラリモジュールに置き、ページ間で重複させないでください。既存のコードスタイルに合わせ、明示的な要件がない限り現在の画面遷移を維持してください。
@@ -88,7 +101,7 @@ type AIResult = {
 }
 ```
 
-Firestoreの予定スキーマは`drawings/{drawingId}`です。主なフィールドは`uid`、`theme`、`imagePublicId`、`result`、`createdAt`です。
+Firestoreの作品スキーマは`drawings/{drawingId}`です。主なフィールドは`uid`、`theme`、`imagePublicId`、`result`、`createdAt`です。ブラウザからFirestoreへ直接アクセスせず、Firebase Functions APIを経由します。
 
 APIキーを公開したり、`.env.*.local`をコミットしたりしないでください。環境変数は@README.mdに記載されたものを使用します。
 

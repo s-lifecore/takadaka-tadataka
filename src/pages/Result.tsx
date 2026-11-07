@@ -3,9 +3,7 @@ import { latLng } from 'leaflet'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
-import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { judgeDrawing } from '../lib/groq'
 import { MapView } from '../components/MapView'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -57,7 +55,6 @@ function LoadResult({ id }: { id: string }) {
       trail={drawing.trail}
       theme={drawing.theme}
       savedResult={drawing.result}
-      savedImagePublicId={drawing.imagePublicId}
     />
   )
 }
@@ -67,20 +64,17 @@ function DrawingResult({
   trail,
   theme,
   savedResult,
-  savedImagePublicId,
 }: {
   id: string
   trail: TrailPoint[]
   theme: string
   savedResult?: AIResult
-  savedImagePublicId?: string
 }) {
   const navigate = useNavigate()
   const [result, setResult] = useState<AIResult | null>(savedResult ?? null)
   const [judging, setJudging] = useState(!savedResult && trail.length >= 2)
   const [error, setError] = useState<string | null>(null)
   const [image, setImage] = useState<string | null>(null)
-  const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
   const [sharing, setSharing] = useState(false)
   const [shareMessage, setShareMessage] = useState('')
@@ -101,21 +95,15 @@ function DrawingResult({
       if (requested.current) return
       requested.current = true
       setImage(base64)
-      if (savedResult && savedImagePublicId) return
+      if (savedResult) return
       setError(null)
       setJudging(true)
       const minimumDisplay = new Promise<void>((resolve) => {
         window.setTimeout(resolve, MIN_JUDGEMENT_MS)
       })
       try {
-        const res = result ?? (await judgeDrawing(base64, theme))
-        setResult(res)
-        // 画像のアップロードが失敗しても、リロード時は保存済みの採点結果を使う。
-        await saveResult(id, res)
-        setSaved(true)
-        const publicId = imagePublicId ?? (await uploadDrawingImage(base64)).publicId
-        setImagePublicId(publicId)
-        await saveResult(id, res, publicId)
+        const response = await saveResult(id, base64)
+        setResult(response.result)
         setSaved(true)
       } catch {
         setError('判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
@@ -124,7 +112,7 @@ function DrawingResult({
         setJudging(false)
       }
     },
-    [id, theme, result, savedResult, savedImagePublicId, imagePublicId],
+    [id, savedResult],
   )
 
   const saveArtwork = () => {

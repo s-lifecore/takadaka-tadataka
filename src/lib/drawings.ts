@@ -1,17 +1,5 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  runTransaction,
-  setDoc,
-  updateDoc,
-} from 'firebase/firestore'
-import dayjs from 'dayjs'
+import { apiRequest, ApiError } from './api'
 import Dexie, { type Table } from 'dexie'
-import { auth, db, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
 import type { TimerSnapshot } from '../hooks/useTimer'
 
@@ -32,88 +20,66 @@ export async function clearLocalTrail(id: string) {
   await localTrails.delete(id)
 }
 
-let authentication: Promise<unknown> | null = null
-async function ensureUser() {
-  authentication ??= auth
-    .authStateReady()
-    .then(() => auth.currentUser ?? signInAnon())
-    .catch((error: unknown) => {
-      authentication = null
-      throw error
-    })
-  await authentication
-  if (!auth.currentUser) throw new Error('認証できませんでした。')
-  return auth.currentUser
+type DrawingResponse = {
+  id: string
+  userId: string | null
+  theme: string
+  trail: TrailPoint[]
+  result?: AIResult
+  imagePublicId?: string
 }
+
+function guestTokenKey(id: string) {
+  return `tadataka:guest-token:${id}`
+}
+
+function guestHeaders(id: string): Headers {
+  const headers = new Headers()
+  const token = sessionStorage.getItem(guestTokenKey(id))
+  if (token) headers.set('X-Guest-Token', token)
+  return headers
+}
+
 export async function createDrawing() {
-  const user = await ensureUser()
-  const drawing = doc(collection(db, 'drawings'))
-  await setDoc(drawing, {
-    uid: user.uid,
-    theme: 'りんご',
-    trail: [],
-    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
-  })
-  return drawing.id
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const drawing = await apiRequest<{ id: string; guestToken?: string }>('/drawings/create', {
+        method: 'POST',
+      })
+      if (drawing.guestToken) sessionStorage.setItem(guestTokenKey(drawing.id), drawing.guestToken)
+      return drawing.id
+    } catch (error) {
+      const retryable =
+        error instanceof TypeError || (error instanceof ApiError && error.status >= 500)
+      if (!retryable || attempt === 2) throw error
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+    }
+  }
+  throw new Error('Failed to create drawing')
 }
+
 export async function loadDrawing(id: string) {
-  const user = await ensureUser()
-  const snapshot = await getDoc(doc(db, 'drawings', id))
-  if (!snapshot.exists()) throw new Error('作品が見つかりません。')
-  const data = snapshot.data()
-  if (data.uid !== user.uid) throw new Error('この作品は開けません。')
-  return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
+  const drawing = await apiRequest<DrawingResponse>(`/drawings/${id}`, {
+    headers: guestHeaders(id),
+  })
+  return drawing
 }
+
 export async function saveTrail(id: string, trail: TrailPoint[]) {
-  await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { trail })
+  await apiRequest(`/drawings/${id}/trail`, {
+    method: 'PATCH',
+    body: JSON.stringify({ trail }),
+    headers: guestHeaders(id),
+  })
 }
-export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
-  await ensureUser()
-  await runTransaction(db, async (transaction) => {
-    const reference = doc(db, 'drawings', id)
-    const snapshot = await transaction.get(reference)
-    if (!snapshot.exists()) throw new Error('作品が見つかりません。')
-    transaction.update(reference, {
-      result,
-      savedAt: snapshot.data().savedAt ?? dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
-      ...(imagePublicId ? { imagePublicId } : {}),
-    })
+export async function saveResult(id: string, image: string) {
+  return apiRequest<{ result: AIResult; imagePublicId: string }>(`/drawings/${id}/result`, {
+    method: 'POST',
+    body: JSON.stringify({ image: `data:image/png;base64,${image}` }),
+    headers: guestHeaders(id),
   })
 }
 
 export async function loadTrail(id: string): Promise<TrailPoint[]> {
   return (await loadDrawing(id)).trail ?? []
-}
-
-export type SavedDrawing = {
-  id: string
-  theme: string
-  trail: TrailPoint[]
-  result: AIResult
-  imagePublicId?: string
-  savedAt: string
-}
-
-export async function loadSavedDrawings(): Promise<SavedDrawing[]> {
-  const user = await ensureUser()
-  // UIDだけで絞り込み、複合インデックスなしで本人の作品を取得する。
-  const snapshot = await getDocs(query(collection(db, 'drawings'), where('uid', '==', user.uid)))
-  return snapshot.docs
-    .flatMap((document) => {
-      const data = document.data()
-      // ゲーム開始時に作られた、まだ採点されていない作品は含めない。
-      if (!data.result || typeof data.result.score !== 'number') return []
-      return [
-        {
-          id: document.id,
-          theme: data.theme,
-          trail: data.trail ?? [],
-          result: data.result as AIResult,
-          imagePublicId: data.imagePublicId,
-          savedAt: data.savedAt ?? data.createdAt,
-        },
-      ]
-    })
-    .sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt) || a.id.localeCompare(b.id))
 }

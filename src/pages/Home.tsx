@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom'
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react'
 
-function Icon({ kind }: { kind: 'compass' | 'steps' | 'people' | 'book' | 'guide' }) {
+function Icon({
+  kind,
+}: {
+  kind: 'compass' | 'steps' | 'people' | 'book' | 'guide' | 'login' | 'personAdd'
+}) {
   const names = {
     compass: 'explore',
     steps: 'directions_walk',
     people: 'people',
     book: 'collections_bookmark',
     guide: 'menu_book',
+    login: 'login',
+    personAdd: 'person_add',
   }
   return (
     <span className="material-icons home-icon" aria-hidden="true">
@@ -70,6 +77,7 @@ function Illustration() {
 
 export function Home() {
   const navigate = useNavigate()
+  const clerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
   return (
     <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
       <header className="home-top flex items-center justify-between gap-3">
@@ -78,60 +86,85 @@ export function Home() {
           旅のスケッチブック
         </span>
         <nav className="home-auth" aria-label="アカウント">
-          <a href="#" className="home-signin" aria-label="サインイン">
-            <span className="material-icons" aria-hidden="true">
-              person_add
-            </span>
-          </a>
-          <a href="#" className="home-login" aria-label="ログイン">
-            <span className="material-icons" aria-hidden="true">
-              login
-            </span>
-          </a>
+          {clerkConfigured ? (
+            <>
+              <SignedOut>
+                <SignUpButton mode="modal">
+                  <button
+                    type="button"
+                    className="home-signup"
+                    aria-label="サインアップ"
+                    title="サインアップ"
+                  >
+                    <Icon kind="personAdd" />
+                  </button>
+                </SignUpButton>
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="home-signin"
+                    aria-label="ログイン"
+                    title="ログイン"
+                  >
+                    <Icon kind="login" />
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+            </>
+          ) : (
+            <span className="home-auth-unconfigured">認証準備中</span>
+          )}
         </nav>
       </header>
-      <div className="home-title">
-        <h1>高々忠敬</h1>
-        <p>歩いた道が、絵になる。</p>
-        <span />
-      </div>
-      <div className="home-picture">
-        <Illustration />
-      </div>
-      <section className="home-adventure">
-        <h2>どの冒険に出かける？</h2>
-        <p>あしあとから、絵を生みだそう</p>
-        <button className="home-solo" onClick={() => navigate('/playalone')}>
-          <Icon kind="steps" />
-          <span>
-            <strong>ひとりで遊ぶ</strong>
-            <small>お題を歩いて描こう！</small>
-          </span>
-          <span className="home-action-icon">
-            <Icon kind="steps" />
-          </span>
-        </button>
-        <button className="home-multi" disabled>
-          <Icon kind="people" />
-          <span>
-            <strong>みんなで遊ぶ</strong>
-            <small>友達と冒険しよう！</small>
-          </span>
-          <b>準備中</b>
-        </button>
+      <section className="home-left">
+        <div className="home-title">
+          <h1>高々忠敬</h1>
+          <p>歩いた道が、絵になる。</p>
+          <span />
+        </div>
+        <div className="home-picture">
+          <Illustration />
+        </div>
       </section>
-      <div className="home-links mt-[18px] grid grid-cols-2 gap-[11px]">
-        <button onClick={() => navigate('/collection')}>
-          <Icon kind="book" />
-          <strong>作品帳</strong>
-          <small>旅の思い出を見る</small>
-        </button>
-        <button onClick={() => navigate('/rules')}>
-          <Icon kind="guide" />
-          <strong>あそびかた</strong>
-          <small>ルールを確認する</small>
-        </button>
-      </div>
+      <section className="home-right">
+        <section className="home-adventure">
+          <h2>どの冒険に出かける？</h2>
+          <p>あしあとから、絵を生みだそう</p>
+          <button className="home-solo" onClick={() => navigate('/playalone')}>
+            <Icon kind="steps" />
+            <span>
+              <strong>ひとりで遊ぶ</strong>
+              <small>お題を歩いて描こう！</small>
+            </span>
+            <span className="home-action-icon">
+              <Icon kind="steps" />
+            </span>
+          </button>
+          <button className="home-multi" disabled>
+            <Icon kind="people" />
+            <span>
+              <strong>みんなで遊ぶ</strong>
+              <small>友達と冒険しよう！</small>
+            </span>
+            <b>準備中</b>
+          </button>
+        </section>
+        <div className="home-links mt-[18px] grid grid-cols-2 gap-[11px]">
+          <button onClick={() => navigate('/collection')}>
+            <Icon kind="book" />
+            <strong>作品帳</strong>
+            <small>旅の思い出を見る</small>
+          </button>
+          <button onClick={() => navigate('/rules')}>
+            <Icon kind="guide" />
+            <strong>あそびかた</strong>
+            <small>ルールを確認する</small>
+          </button>
+        </div>
+      </section>
       <footer className="home-footer">
         <Icon kind="steps" />
         <span>歩いて、描いて、AIに見せよう！</span>

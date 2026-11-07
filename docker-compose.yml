@@ -1,0 +1,67 @@
+services:
+  firebase-emulator:
+    build:
+      context: .
+      dockerfile: docker/firebase-emulator.Dockerfile
+    working_dir: /workspace
+    env_file:
+      - ${ENV_FILE:-.env.prev.local}
+      - ${FUNCTIONS_ENV_FILE:-functions/.env.prev.local}
+    environment:
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      VITE_MODE: ${VITE_MODE:-prev}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://127.0.0.1:5001/' +
+          process.env.FIREBASE_PROJECT_ID +
+          '/asia-northeast1/api/drawings/not-found').then((response) =>
+          process.exit(response.status === 404 ? 0 : 1)).catch(() =>
+          process.exit(1))"
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    volumes:
+      - .:/workspace
+      - functions_node_modules:/workspace/functions/node_modules
+    ports:
+      - "${HOSTING_PORT:-5050}:5000"
+      - "4000:4000"
+      - "4400:4400"
+      - "5001:5001"
+      - "8080:8080"
+      - "9150:9150"
+    command: >-
+      sh -c "npm ci --prefix functions &&
+      mkdir -p dist &&
+      npm run build --prefix functions -- --watch &
+      exec firebase emulators:start --only functions,firestore,hosting
+      --project \"$${FIREBASE_PROJECT_ID}\""
+
+  frontend:
+    image: node:24.22.2-bookworm-slim
+    working_dir: /workspace
+    env_file:
+      - ${ENV_FILE:-.env.prev.local}
+    environment:
+      VITE_API_BASE_URL: /api
+      VITE_MODE: ${VITE_MODE:-prev}
+    volumes:
+      - .:/workspace
+      - frontend_node_modules:/workspace/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      firebase-emulator:
+        condition: service_healthy
+    command: >-
+      sh -c "npm ci &&
+      until node -e \"fetch('http://firebase-emulator:5001/' + process.env.FIREBASE_PROJECT_ID + '/asia-northeast1/api/drawings/not-found').then((response) => process.exit(response.status === 404 ? 0 : 1)).catch(() => process.exit(1))\"; do sleep 1; done &&
+      npm run build &&
+      npm run dev -- --host 0.0.0.0 --mode $${VITE_MODE:-prev}"
+
+volumes:
+  frontend_node_modules:
+  functions_node_modules:
