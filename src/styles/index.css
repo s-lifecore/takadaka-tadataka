@@ -413,7 +413,8 @@ body:has(.home-page) {
 
 .walking-page {
   min-height: 100svh;
-  padding: max(30px, env(safe-area-inset-top)) 9px max(18px, env(safe-area-inset-bottom));
+  padding: max(30px, env(safe-area-inset-top)) max(9px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom)) max(9px, env(safe-area-inset-left));
   background: #f6efe4;
   color: #6b513b;
 }
@@ -421,7 +422,9 @@ body:has(.home-page) {
   display: flex;
   flex-direction: column;
   max-width: 760px;
-  min-height: calc(100svh - 48px);
+  min-height: calc(
+    100svh - max(30px, env(safe-area-inset-top)) - max(18px, env(safe-area-inset-bottom))
+  );
   margin: 0 auto;
 }
 .walking-header {
@@ -477,6 +480,9 @@ body:has(.home-page) {
   color: #b43c2d;
 }
 .walking-map {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   position: relative;
   flex: 1 0 65svh;
   min-height: 360px;
