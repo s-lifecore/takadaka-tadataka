@@ -128,24 +128,11 @@ export function useWakeLock() {
       }
     }
     const handlePageShow = () => void request()
-    // 再読み込みでSafariの初回許可が失われても、次の通常操作で再取得する。
-    // 合成イベントではユーザー操作の条件を満たせないため、実際の操作だけを扱う。
-    const handleInteraction = (event: Event) => {
-      if (!event.isTrusted) return
-      if (event instanceof KeyboardEvent && (event.repeat || event.isComposing)) return
-      void request()
-    }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('pageshow', handlePageShow)
-    document.addEventListener('pointerup', handleInteraction, { capture: true, passive: true })
-    document.addEventListener('touchend', handleInteraction, { capture: true, passive: true })
-    document.addEventListener('keydown', handleInteraction, { capture: true })
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pageshow', handlePageShow)
-      document.removeEventListener('pointerup', handleInteraction, true)
-      document.removeEventListener('touchend', handleInteraction, true)
-      document.removeEventListener('keydown', handleInteraction, true)
       release()
     }
   }, [request, release, suspend])

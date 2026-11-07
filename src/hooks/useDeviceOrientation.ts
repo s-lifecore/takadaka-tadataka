@@ -125,6 +125,7 @@ export function useDeviceOrientation() {
         !Number.isFinite(event.timeStamp)
       ) {
         resetStationary()
+        setHasSample(false)
         return
       }
       const now = event.timeStamp

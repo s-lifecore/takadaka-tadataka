@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { prepareMotionPermission } from '../hooks/useDeviceOrientation'
 import { prepareWakeLockPermission } from '../hooks/useWakeLock'
 
 export function Theme() {
   const navigate = useNavigate()
   const startingRef = useRef(false)
+  const activeRef = useRef(true)
   const [starting, setStarting] = useState(false)
+  useEffect(() => {
+    activeRef.current = true
+    return () => {
+      activeRef.current = false
+    }
+  }, [])
   const handleStart = async () => {
     if (startingRef.current) return
     startingRef.current = true
@@ -15,12 +22,19 @@ export function Theme() {
     const wakeLockPermission = prepareWakeLockPermission()
     const motionPermission = prepareMotionPermission()
     await Promise.all([wakeLockPermission, motionPermission])
-    navigate('/map')
+    if (activeRef.current) navigate('/map')
   }
   return (
     <main className="theme-page">
       <header className="theme-header">
-        <button onClick={() => navigate('/')}>〈 もどる</button>
+        <button
+          onClick={() => {
+            activeRef.current = false
+            navigate('/')
+          }}
+        >
+          〈 もどる
+        </button>
         <span>ひとりで遊ぶ</span>
         <span className="theme-compass" aria-hidden="true">
           ♧
