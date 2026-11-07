@@ -6,8 +6,8 @@ import type { Position, TrailPoint } from '../types'
 type Props = {
   trail: TrailPoint[]
   currentPosition?: Position | null
-  interactive?: boolean
   fitTrail?: boolean
+  interactive?: boolean
 }
 
 // GPS取得前の表示位置。金沢工業大学 扇が丘キャンパス（世界測地系）。
@@ -25,15 +25,22 @@ function FitTrail({ trail }: { trail: TrailPoint[] }) {
   const map = useMap()
   useEffect(() => {
     if (!trail.length) return
-    map.fitBounds(
-      trail.map(({ lat, lng }) => [lat, lng] as [number, number]),
-      { padding: [24, 24], maxZoom: 17, animate: false },
-    )
+    const fit = () => {
+      map.invalidateSize({ pan: false })
+      map.fitBounds(
+        trail.map(({ lat, lng }) => [lat, lng] as [number, number]),
+        { padding: [24, 24], maxZoom: 17, animate: false },
+      )
+    }
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(map.getContainer())
+    return () => observer.disconnect()
   }, [map, trail])
   return null
 }
 
-export function MapView({ trail, currentPosition, interactive = true, fitTrail = false }: Props) {
+export function MapView({ trail, currentPosition, fitTrail = false, interactive = true }: Props) {
   const positions = trail.map((p) => [p.lat, p.lng] as [number, number])
   const center = currentPosition ?? trail[trail.length - 1] ?? INITIAL_CENTER
 
