@@ -11,6 +11,12 @@ export type UploadedImage = {
 const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
+export function getDrawingImageUrl(publicId: string): string | null {
+  if (!cloudName || !publicId) return null
+  const path = publicId.split('/').map(encodeURIComponent).join('/')
+  return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/${path}`
+}
+
 export async function uploadDrawingImage(imageBase64: string): Promise<UploadedImage> {
   if (!cloudName || !uploadPreset) {
     throw new Error(
