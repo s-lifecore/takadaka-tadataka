@@ -4,10 +4,10 @@ import process from 'node:process'
 import { loadEnv } from 'vite'
 
 const target = process.argv[2]
-const environments = new Set(['prev', 'prod'])
+const environments = new Set(['prod'])
 
 if (!environments.has(target)) {
-  console.error('Usage: npm run deploy:hosting -- <prev|prod>')
+  console.error('Usage: CONFIRM_PROD_DEPLOY=1 npm run deploy:hosting -- prod')
   process.exit(1)
 }
 

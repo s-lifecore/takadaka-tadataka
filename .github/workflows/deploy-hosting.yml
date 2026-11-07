@@ -2,27 +2,19 @@ name: Deploy Firebase Hosting
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: Firebase environment to deploy
-        required: true
-        type: choice
-        options:
-          - prev
-          - prod
 
 permissions:
   contents: read
   id-token: write
 
 concurrency:
-  group: hosting-${{ inputs.environment }}
+  group: hosting-prod
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: prod
 
     steps:
       - name: Checkout
