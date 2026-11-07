@@ -192,9 +192,23 @@ export function useGeolocation(
         lastSampleTimeRef.current = null
         setIsStationary(false)
         setIsMoving(false)
-        setError(err.message)
+        switch (err.code) {
+          case 1:
+            setError(
+              '位置情報の許可が必要です。設定 → Safari/Chrome → 位置情報を「許可」に変更してください。設定を変更したら、再試行してください。',
+            )
+            break
+          case 2:
+            setError('GPS信号を取得できません。屋外に出て再試行してください。')
+            break
+          case 3:
+            setError('位置情報の取得がタイムアウトしました。再試行してください。')
+            break
+          default:
+            setError('位置情報を取得できません。端末の位置情報設定を確認して再試行してください。')
+        }
       },
-      { enableHighAccuracy: true, maximumAge: 0 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
     )
   }, [])
 
@@ -215,6 +229,11 @@ export function useGeolocation(
     }
   }, [])
 
+  const retry = useCallback(() => {
+    stop()
+    start()
+  }, [stop, start])
+
   return {
     trail,
     currentPosition,
@@ -224,6 +243,7 @@ export function useGeolocation(
     isLocating,
     start,
     stop,
+    retry,
     pause,
     resume,
   }
