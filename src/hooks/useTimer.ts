@@ -1,10 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export function useTimer(initialSeconds: number) {
-  const [remaining, setRemaining] = useState(initialSeconds)
+export type TimerSnapshot = { remainingMs: number; endAt: number | null; paused?: boolean }
+
+export function useTimer(initialSeconds: number, initialSnapshot?: TimerSnapshot) {
+  const initialMs = initialSnapshot
+    ? Math.max(
+        0,
+        initialSnapshot.endAt === null
+          ? initialSnapshot.remainingMs
+          : initialSnapshot.endAt - Date.now(),
+      )
+    : initialSeconds * 1000
+  const [remaining, setRemaining] = useState(Math.ceil(initialMs / 1000))
   const [running, setRunning] = useState(false)
   const endAtRef = useRef<number | null>(null)
-  const remainingMsRef = useRef(initialSeconds * 1000)
+  const remainingMsRef = useRef(initialMs)
+
+  const getSnapshot = useCallback(
+    (): TimerSnapshot => ({
+      remainingMs:
+        endAtRef.current === null
+          ? remainingMsRef.current
+          : Math.max(0, endAtRef.current - Date.now()),
+      endAt: endAtRef.current,
+    }),
+    [],
+  )
 
   const start = useCallback(() => {
     if (endAtRef.current !== null || remainingMsRef.current <= 0) return
@@ -54,5 +75,5 @@ export function useTimer(initialSeconds: number) {
 
   const expired = remaining === 0
 
-  return { remaining, running, expired, start, stop, reset }
+  return { remaining, running, expired, start, stop, reset, getSnapshot }
 }
