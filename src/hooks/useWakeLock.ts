@@ -36,7 +36,11 @@ export function useWakeLock() {
     try {
       const lock = await navigator.wakeLock.request('screen')
       // 終了後や古いセッションで取得できたロックは保持しない。
-      if (!wantedRef.current || generation !== generationRef.current) {
+      if (
+        !wantedRef.current ||
+        generation !== generationRef.current ||
+        document.visibilityState !== 'visible'
+      ) {
         await lock.release()
         return
       }
@@ -67,8 +71,7 @@ export function useWakeLock() {
     void request()
   }, [request])
 
-  const release = useCallback(() => {
-    wantedRef.current = false
+  const suspend = useCallback(() => {
     generationRef.current += 1
     pendingRef.current = null
     const lock = lockRef.current
@@ -76,15 +79,31 @@ export function useWakeLock() {
     if (lock) void lock.release().catch(() => {})
   }, [])
 
+  const release = useCallback(() => {
+    wantedRef.current = false
+    suspend()
+  }, [suspend])
+
   useEffect(() => {
     // バックグラウンド移行で解放されたロックを、復帰時に再取得する。
-    const handleVisibilityChange = () => void request()
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void request()
+      } else {
+        // 取得待ちも無効化し、復帰後のリクエストが古いPromiseに阻まれないようにする。
+        suspend()
+        if (wantedRef.current) setStatus('released')
+      }
+    }
+    const handlePageShow = () => void request()
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pageshow', handlePageShow)
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pageshow', handlePageShow)
       release()
     }
-  }, [request, release])
+  }, [request, release, suspend])
 
   return { acquire, release, status, error }
 }
