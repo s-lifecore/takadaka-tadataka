@@ -9,6 +9,10 @@ import { Rules } from './pages/Rules'
 import { UnsupportedDevice } from './pages/UnsupportedDevice'
 
 const isPC = !window.matchMedia('(pointer: coarse)').matches
+const isTablet =
+  /iPad/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+  (/Android/i.test(navigator.userAgent) && !/Mobile/i.test(navigator.userAgent))
 
 type ErrorBoundaryProps = {
   children: ReactNode
@@ -54,7 +58,7 @@ export function App() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
-  if (!('geolocation' in navigator)) {
+  if (isTablet || !('geolocation' in navigator)) {
     return <UnsupportedDevice />
   }
 
