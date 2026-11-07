@@ -290,9 +290,9 @@ ngrokをインストールし、認証トークンを設定しておきます。
 
 ### Firebase Hostingへのデプロイ
 
-GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってデプロイする。`prev` と `prod` は別々のFirebaseプロジェクトを使用し、デプロイする。
+GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prod` Environmentの設定を使って本番へデプロイする。
 
-GitHub Environment（`prev` / `prod`）には、次を登録します。
+GitHub Environment（`prod`）には、次を登録します。
 
 ```text
 vars.FIREBASE_PROJECT_ID
@@ -312,10 +312,10 @@ secrets.GROQ_API_KEY
 ```bash
 npm install
 npx --yes firebase-tools@15.34.2 login
-cp .env.example .env.prev.local
-# .env.prev.local に prev 用のClerk / FirebaseプロジェクトID / Cloudinary / Gemini設定を記入
-# functions/.env.prev.local にはClerk / Cloudinary設定を記入
-npm run deploy:hosting -- prev
+cp .env.example .env.prod.local
+# .env.prod.local に prod 用のClerk / FirebaseプロジェクトID / Cloudinary / Gemini設定を記入
+# functions/.env.prod.local にはClerk / Cloudinary設定を記入
+CONFIRM_PROD_DEPLOY=1 npm run deploy:hosting -- prod
 ```
 
 `prod` は明示的な確認値が必要になる。
