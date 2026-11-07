@@ -44,7 +44,8 @@ body,
   gap: 10px;
   width: 100%;
 }
-.home-auth a {
+.home-auth a,
+.home-auth button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,12 +64,18 @@ body,
   background: #df894e;
   color: #fffaf0;
 }
-.home-auth a:hover {
+.home-auth a:hover,
+.home-auth button:hover {
   filter: brightness(0.96);
 }
-.home-auth a:focus-visible {
+.home-auth a:focus-visible,
+.home-auth button:focus-visible {
   outline: 3px solid #a36034;
   outline-offset: 4px;
+}
+.home-auth-unconfigured {
+  color: #9d7756;
+  font-size: 12px;
 }
 .home-title {
   text-align: center;

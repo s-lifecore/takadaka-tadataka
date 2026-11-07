@@ -6,7 +6,6 @@ import { AdvancedImage } from '@cloudinary/react'
 import { Cloudinary } from '@cloudinary/url-gen'
 import { auto } from '@cloudinary/url-gen/actions/resize'
 import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
-import { uploadDrawingImage } from '../lib/cloudinary'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { judgeDrawing } from '../lib/gemini'
 import type { AIResult, TrailPoint } from '../types'
@@ -100,9 +99,9 @@ function DrawingResult({
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
-        const publicId = imagePublicId ?? (await uploadDrawingImage(base64)).publicId
+        const saved = await saveResult(id, res, base64)
+        const publicId = imagePublicId ?? saved.imagePublicId
         setImagePublicId(publicId)
-        await saveResult(id, res, publicId)
         setSaved(true)
       } catch {
         setError('判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')

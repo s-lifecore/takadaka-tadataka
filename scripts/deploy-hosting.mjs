@@ -26,10 +26,10 @@ if (target === 'prod' && process.env.CONFIRM_PROD_DEPLOY !== '1') {
 }
 
 const env = loadEnv(target, process.cwd(), '')
-const projectId = env.FIREBASE_PROJECT_ID ?? env.VITE_FIREBASE_PROJECT_ID
+const projectId = env.FIREBASE_PROJECT_ID
 
 if (!projectId) {
-  console.error(`FIREBASE_PROJECT_ID or VITE_FIREBASE_PROJECT_ID is required in ${envFile}.`)
+  console.error(`FIREBASE_PROJECT_ID is required in ${envFile}.`)
   process.exit(1)
 }
 

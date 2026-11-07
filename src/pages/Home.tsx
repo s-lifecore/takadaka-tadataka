@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react'
 
 function Icon({ kind }: { kind: 'compass' | 'steps' | 'people' | 'book' | 'guide' }) {
   const names = {
@@ -70,6 +71,7 @@ function Illustration() {
 
 export function Home() {
   const navigate = useNavigate()
+  const clerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
   return (
     <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
       <header className="home-top flex flex-wrap items-center justify-between gap-3">
@@ -78,12 +80,27 @@ export function Home() {
           旅のスケッチブック
         </span>
         <nav className="home-auth" aria-label="アカウント">
-          <a href="#" className="home-signin">
-            サインイン
-          </a>
-          <a href="#" className="home-login">
-            ログイン
-          </a>
+          {clerkConfigured ? (
+            <>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button type="button" className="home-signin">
+                    サインイン
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button type="button" className="home-login">
+                    ログイン
+                  </button>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+            </>
+          ) : (
+            <span className="home-auth-unconfigured">認証準備中</span>
+          )}
         </nav>
       </header>
       <div className="home-title">

@@ -1,47 +1,55 @@
-import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
-import dayjs from 'dayjs'
-import { auth, db, signInAnon } from './firebase'
+import { apiRequest } from './api'
 import type { AIResult, TrailPoint } from '../types'
 
-let authentication: Promise<unknown> | null = null
-async function ensureUser() {
-  authentication ??= auth
-    .authStateReady()
-    .then(() => auth.currentUser ?? signInAnon())
-    .catch((error: unknown) => {
-      authentication = null
-      throw error
-    })
-  await authentication
-  if (!auth.currentUser) throw new Error('認証できませんでした。')
-  return auth.currentUser
+type DrawingResponse = {
+  id: string
+  userId: string | null
+  theme: string
+  trail: TrailPoint[]
+  result?: AIResult
+  imagePublicId?: string
 }
+
+function guestTokenKey(id: string) {
+  return `tadataka:guest-token:${id}`
+}
+
+function guestHeaders(id: string): Headers {
+  const headers = new Headers()
+  const token = sessionStorage.getItem(guestTokenKey(id))
+  if (token) headers.set('X-Guest-Token', token)
+  return headers
+}
+
 export async function createDrawing() {
-  const user = await ensureUser()
-  const drawing = doc(collection(db, 'drawings'))
-  await setDoc(drawing, {
-    uid: user.uid,
-    theme: 'りんご',
-    trail: [],
-    createdAt: dayjs().tz('Asia/Tokyo').format('YYYY-MM-DDTHH:mm:ssZ'),
+  const drawing = await apiRequest<{ id: string; guestToken?: string }>('/drawings/create', {
+    method: 'POST',
   })
+  if (drawing.guestToken) sessionStorage.setItem(guestTokenKey(drawing.id), drawing.guestToken)
   return drawing.id
 }
+
 export async function loadDrawing(id: string) {
-  const user = await ensureUser()
-  const snapshot = await getDoc(doc(db, 'drawings', id))
-  if (!snapshot.exists()) throw new Error('作品が見つかりません。')
-  const data = snapshot.data()
-  if (data.uid !== user.uid) throw new Error('この作品は開けません。')
-  return data as { theme: string; trail: TrailPoint[]; result?: AIResult; imagePublicId?: string }
+  const drawing = await apiRequest<DrawingResponse>(`/drawings/${id}`, {
+    headers: guestHeaders(id),
+  })
+  return drawing
 }
+
 export async function saveTrail(id: string, trail: TrailPoint[]) {
-  await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { trail })
+  await apiRequest(`/drawings/${id}/trail`, {
+    method: 'PATCH',
+    body: JSON.stringify({ trail }),
+    headers: guestHeaders(id),
+  })
 }
-export async function saveResult(id: string, result: AIResult, imagePublicId?: string) {
-  await ensureUser()
-  await updateDoc(doc(db, 'drawings', id), { result, ...(imagePublicId ? { imagePublicId } : {}) })
+
+export async function saveResult(id: string, result: AIResult, image: string) {
+  return apiRequest<{ imagePublicId: string }>(`/drawings/${id}/result`, {
+    method: 'POST',
+    body: JSON.stringify({ result, image: `data:image/png;base64,${image}` }),
+    headers: guestHeaders(id),
+  })
 }
 
 export async function loadTrail(id: string): Promise<TrailPoint[]> {

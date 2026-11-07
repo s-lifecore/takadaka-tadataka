@@ -52,7 +52,7 @@
 
 `/map` ではカウントダウンと Firestore の作品作成を行い、両方が完了してから `/map/[id]` に移動します。
 完了ボタンまたは時間切れで軌跡を Firestore に保存し、`/result/[id]` で読み込んで採点します。
-Firebase Anonymous Auth と Firestore の設定、および本人の作品を読み書きできるセキュリティルールが必要です。
+ClerkのPublishable KeyとFirebase Functions APIの設定が必要です。FirestoreはFunctionsのAdmin SDK経由で操作します。
 Firebase Hosting は `firebase.json` で `dist` を公開し、全パスを `index.html` にリライトします。
 Vite の開発サーバーは SPA のフォールバックに対応しています。
 
@@ -80,7 +80,7 @@ GPS未取得・権限拒否・精度不足などで軌跡が記録されない�
 `:id` は開始時に作成する `drawings/{drawingId}` のIDです。
 完了時に軌跡を保存して結果へ移動し、採点結果も同じドキュメントへ保存します。
 「ホームに戻る」は `/` へ戻ります。ホームの「ひとりで遊ぶ」は `/playalone` のお題画面に進み、「冒険スタート！」で `/map` に移動します。カウントダウンは `/map` で一度だけ行います。
-Firebase の Anonymous Auth と Firestore の読み書き権限が必要です。
+Clerkのログイン状態に応じてFunctions APIへBearer tokenを付与します。未ログインのゲストはFunctionsが発行する一時トークンで自分のプレイ中作品を操作します。
 プレイ中の再読み込みでは軌跡とタイマーはリセットされます。
 Firebase Hosting は `firebase.json` のリライトで各URLへの直接アクセスに対応します。
 
@@ -121,9 +121,10 @@ Firebase Hosting は `firebase.json` のリライトで各URLへの直接アク�
 | 位置情報 | Geolocation API (watchPosition) | ブラウザ標準 |
 | 一時保存 | IndexedDB (Dexie.js) | GPS途切れ・通信不良対策 |
 | PWA | vite-plugin-pwa | 設定だけでPWA化 |
-| 認証 | Firebase Anonymous Auth | サーバー不要 |
-| DB | Firebase Firestore | 結果を保存 |
-| ストレージ | Cloudinary | 画像保存 |
+| 認証 | Clerk | ログイン・セッション管理 |
+| API | Firebase Functions | Clerk検証、認可、保存処理 |
+| DB | Firebase Firestore Admin SDK | Functions経由で作品を保存 |
+| ストレージ | Cloudinary | Functions経由で画像保存 |
 | ホスティング | Firebase Hosting | HTTPS自動 |
 | AI判定 | Gemini API (Firebase AI Logic) | 画像入力対応・JSON構造化出力 |
 
@@ -156,12 +157,15 @@ type AIResult = {
 
 ```plaintext
 drawings/{drawingId}
-  uid:     string       　// Anonymous Auth UID
+  uid:  string|null   // Clerk userId。ゲストはnull
+  guestTokenHash: string // ゲスト作品の操作用ハッシュ（サーバーのみ）
   theme:    string       // お題
   imagePublicId: string  // Cloudinary public ID
   result:   AIResult
   createdAt: string        // ISO 8601形式のAsia/Tokyo時刻（+09:00）
 ```
+
+Firestoreへのブラウザ直接アクセスは行わず、Firebase Functionsの`/api/drawings/*`を経由します。Firestore Security Rulesは拒否設定です。
 
 ---
 
@@ -169,78 +173,102 @@ drawings/{drawingId}
 
 ### 必要なもの
 
-- Node.js
+- Docker Desktop（Docker Composeを含む）
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
 
-### パッケージバージョン
-
-```bash
-npm -v # 12.2.1
-node -v # 24.22.2
-```
+Docker内の実行バージョンは、フロントエンドがNode.js `24.22.1`、Firebase Functions EmulatorがNode.js `20`です。Functionsは`functions/package.json`の本番ランタイム設定に合わせています。
 
 ### インストール
 
 ```bash
 git clone <repo-url>
 cd gps-drawing
-npm install
 ```
+
+依存関係は`make up`実行時にDockerコンテナ内へインストールされます。
 
 ### 環境変数
 
-`.env.prev.local` を作成（`.env.example` をコピー）：
+フロント用の`.env.prev.local`を作成（`.env.example`をコピー）：
 
 ```bash
 cp .env.example .env.prev.local
 ```
 
 ```env
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
+VITE_CLERK_PUBLISHABLE_KEY=...
+FIREBASE_PROJECT_ID=...
 VITE_CLOUDINARY_CLOUD_NAME=...
 VITE_CLOUDINARY_UPLOAD_PRESET=...
 VITE_GEMINI_API_KEY=...
 ```
 
-### 開発サーバー起動
+Functionsのローカル用設定は`functions/.env.example`をテンプレートにし、フロントと同じモードの`functions/.env.prev.local`へ作成します。ここにはSecretを置くため、Gitへコミットしません。
 
-```bash
-npm run dev
+```env
+CLERK_SECRET_KEY=...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+CLOUDINARY_UPLOAD_PRESET=...
 ```
 
-> スマホ実機で確認する場合：`npm run dev -- --host` でLANのIPにアクセス（HTTPSが必要なAPIは `localhost` のみ動作）
+### Dockerでの開発サーバー起動
+
+```bash
+make up
+```
+
+`make up`は`.env.prev.local`の`FIREBASE_PROJECT_ID`と`functions/.env.prev.local`を読み込み、Docker Compose内でFirebase Emulator、FunctionsのTypeScript監視ビルド、Viteを同時に起動します。ホスト側のNode.js、Firebase CLI、Javaは不要です。
+
+```bash
+cp functions/.env.example functions/.env.prev.local
+# functions/.env.prev.local にローカル用のClerk / Cloudinary設定を記入
+```
+
+APIのデフォルト接続先は`/api`です。`make up`の間だけ、`http://127.0.0.1:5001/<project-id>/asia-northeast1/api`へ上書きされます。
+
+Functionsの実装は`functions/src/**/*.ts`を編集します。`make up`実行中はコンテナ内で変更が自動的に`functions/lib`へビルドされ、Emulatorへ反映されます。`functions/lib`は生成物なのでコミットしません。
+
+ブラウザは`http://localhost:5173`、Firebase Emulator UIは`http://localhost:4000`、Functions Emulatorは`http://localhost:5001`で確認します。終了時は次を実行します。
+
+```bash
+make down
+```
+
+Composeの名前付きボリュームにはnpm依存関係だけを保存します。通常の終了ではデータを消す`docker compose down -v`を使用しません。
+
+> Functions Emulatorも含めて確認する場合は`make up`を使用します。スマホ実機から確認する場合は、Viteの公開ホスト設定を確認したうえでDockerの5173番ポートを公開し、HTTPSが必要なGPS・センサー確認はngrok等を併用します。
 
 ### Firebase Hostingへのデプロイ
 
 GHAの `Deploy Firebase Hosting` workflowを手動実行し、`prev` または `prod` を選択して、その環境の設定を使ってデプロイする。`prev` と `prod` は別々のFirebaseプロジェクトを使用し、デプロイする。
 
-GitHub Environmentには、Firebaseプロジェクトの設定として `vars.FIREBASE_PROJECT_ID` と `secrets.FIREBASE_SERVICE_ACCOUNT` を登録する。`vars.FIREBASE_PROJECT_ID` を使わない場合は、既存の `secrets.VITE_FIREBASE_PROJECT_ID` がフォールバックとして使われる。加えて、ビルドに必要な次のSecretsを `prev` / `prod` それぞれに登録する。
+GitHub Environment（`prev` / `prod`）には、次を登録します。
 
 ```text
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN
-VITE_FIREBASE_PROJECT_ID
-VITE_FIREBASE_STORAGE_BUCKET
-VITE_FIREBASE_MESSAGING_SENDER_ID
-VITE_FIREBASE_APP_ID
-VITE_CLOUDINARY_CLOUD_NAME
-VITE_CLOUDINARY_UPLOAD_PRESET
-VITE_GEMINI_API_KEY
+vars.FIREBASE_PROJECT_ID
+secrets.FIREBASE_SERVICE_ACCOUNT
+secrets.VITE_CLERK_PUBLISHABLE_KEY
+secrets.CLERK_SECRET_KEY
+secrets.VITE_CLOUDINARY_CLOUD_NAME
+secrets.CLOUDINARY_API_KEY
+secrets.CLOUDINARY_API_SECRET
+secrets.VITE_CLOUDINARY_UPLOAD_PRESET
+secrets.VITE_GEMINI_API_KEY
 ```
 
-ローカルからはFirebase CLIでログインしたあと、環境別ファイルを作成してデプロイする。`.env.*.local` はGitに含まれない。
+`FIREBASE_SERVICE_ACCOUNT`はHostingとFunctionsのデプロイに使用します。FunctionsのSecretはGHAがFirebase Secret Managerへ登録します。
+`FIREBASE_PROJECT_ID`はSecretではなくEnvironment Variable（`vars`）へ登録するのが推奨です。既存構成との互換性のため、workflowは`secrets.FIREBASE_PROJECT_ID`、`secrets.VITE_FIREBASE_PROJECT_ID`の順にfallbackします。
+
+ローカルからデプロイする場合だけ、Firebase CLIでログインしたあと、フロント用環境ファイルとFunctions用環境ファイルを作成してデプロイします。開発時の`make up`にはFirebase CLIは不要です。`.env.*.local`はGitに含まれません。
 
 ```bash
 npm install
 npx --yes firebase-tools@15.34.2 login
 cp .env.example .env.prev.local
-# .env.prev.local に prev 用のFirebase / Cloudinary / Gemini設定を記入
+# .env.prev.local に prev 用のClerk / FirebaseプロジェクトID / Cloudinary / Gemini設定を記入
 npm run deploy:hosting -- prev
 ```
 
@@ -252,14 +280,19 @@ cp .env.example .env.prod.local
 CONFIRM_PROD_DEPLOY=1 npm run deploy:hosting -- prod
 ```
 
-このスクリプトは、対象環境のビルド後に `firebase deploy --only hosting --project ...` を実行する。`FIREBASE_PROJECT_ID` または `VITE_FIREBASE_PROJECT_ID` を環境別ファイルに設定する。
+GHAの`Deploy Firebase Hosting`は、フロントをビルドしたあとFunctionsをデプロイし、最後にHostingをデプロイします。ローカルの`deploy:hosting`スクリプトは現時点ではHostingのみをデプロイするため、Functionsを先にデプロイする場合は、Firebase CLIで次を実行します。
+
+```bash
+npm run functions:build
+FIREBASE_PROJECT_ID=<project-id> npx --yes firebase-tools@15.34.2 deploy --only functions --project <project-id>
+```
 
 ### スマートフォンで歩きスマホ検知を確認
 
 傾きセンサーとGPSの実機確認にはHTTPSを使用します。ngrokを設定済みのPCで、次のコマンドをそれぞれ別のターミナルで実行してください。
 
 ```bash
-npm run dev -- --port 5173 --strictPort
+make up
 ```
 
 ```bash
@@ -298,7 +331,8 @@ src/
 │   ├── useGeolocation  # watchPosition ラッパー（フロントA）
 │   └── useTimer        # 残り時間管理（フロントA）
 ├── lib/
-│   ├── firebase    # Firebase 初期化・CRUD（バックエンド）
+│   ├── api         # Functions API呼び出し
+│   ├── drawings    # 作品APIクライアント
 │   └── gemini      # Gemini API 呼び出し（AI判定）
 └── pages/
     ├── Home        # ホーム画面（フロントB）
@@ -316,7 +350,7 @@ src/
 | URL | 画面 |
 | --- | --- |
 | `/` | ホーム |
-| `/collection` | 作品帳（既存のサンプル表示） |
+| `/collection` | 作品帳（ログイン必須。現状はサンプル表示） |
 | `/map` | 3秒カウントダウン・Firestore作品作成 |
 | `/map/:id` | 地図・GPS・15分タイマー |
 | `/result/:id` | AI採点・結果の保存と表示 |
@@ -324,7 +358,7 @@ src/
 `:id` はゲーム開始時に作成する `drawings/{drawingId}` のIDです。
 完了ボタンまたは時間切れで軌跡を保存し、結果画面では同じIDの作品を読み込みます。
 保存済みの採点結果は再判定せず表示します。「ホームに戻る」は `/` へ移動します。
-Firebase Anonymous Auth と Firestore の読み書き権限が必要です。
+ClerkのPublishable Keyが設定されている場合はログインUIが表示されます。作品の作成・読込・軌跡・結果保存はFirebase Functions APIへ接続します。未設定の場合、ゲームは起動できますがClerkログインと実環境APIの確認はできません。
 プレイ途中の再読み込みでは未保存の軌跡とタイマーは復元しません。
 Firebase Hosting の直接アクセスは `firebase.json` のリライトで対応します。
 

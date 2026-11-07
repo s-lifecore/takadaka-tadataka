@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { SignInButton, SignedIn, SignedOut } from '@clerk/clerk-react'
 
 function BookIcon() {
   return (
@@ -18,6 +19,30 @@ function BookIcon() {
 }
 
 export function Collection() {
+  if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
+    return <p role="alert">Clerkの設定が完了していないため、作品帳を開けません。</p>
+  }
+  return (
+    <>
+      <SignedOut>
+        <main className="collection-page">
+          <div className="collection-content">
+            <h1>作品帳</h1>
+            <p>作品帳を見るにはログインしてください。</p>
+            <SignInButton mode="modal">
+              <button type="button">ログインする</button>
+            </SignInButton>
+          </div>
+        </main>
+      </SignedOut>
+      <SignedIn>
+        <CollectionContent />
+      </SignedIn>
+    </>
+  )
+}
+
+function CollectionContent() {
   const navigate = useNavigate()
   return (
     <main className="collection-page">
