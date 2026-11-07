@@ -96,5 +96,5 @@ export async function loadSavedDrawings(): Promise<SavedDrawing[]> {
         },
       ]
     })
-    .sort((a, b) => Date.parse(a.savedAt) - Date.parse(b.savedAt) || a.id.localeCompare(b.id))
+    .sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt) || a.id.localeCompare(b.id))
 }
