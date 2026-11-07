@@ -82,8 +82,9 @@ function DrawingResult({
   const [image, setImage] = useState<string | null>(null)
   const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
-  const [shareMessage, setShareMessage] = useState('')
   const [sharing, setSharing] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
+  const [manualShare, setManualShare] = useState(false)
   const requested = useRef(false)
   const distanceKm = useMemo(
     () =>
@@ -134,48 +135,36 @@ function DrawingResult({
     link.click()
   }
 
-  const resultUrl = new URL(`/result/${encodeURIComponent(id)}`, window.location.origin).href
   const shareTitle = `お題「${theme}」に挑戦！`
   const shareText = `${shareTitle} AIスコア: ${result?.score ?? 0}点\n歩いて絵を描くゲーム「高々忠敬」 #高々忠敬`
-  const xShareUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText, url: resultUrl })}`
+  const xShareUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText })}`
 
-  const shareFile = useMemo(() => {
-    if (!image) return null
-    const bytes = Uint8Array.from(atob(image), (character) => character.charCodeAt(0))
-    return new File([bytes], `drawing-${id}.png`, { type: 'image/png' })
-  }, [image, id])
-  const canShareImage = Boolean(
-    shareFile &&
-    typeof navigator.share === 'function' &&
-    typeof navigator.canShare === 'function' &&
-    navigator.canShare({ files: [shareFile] }),
-  )
-
-  const shareArtwork = async () => {
+  const shareArtworkToX = async () => {
+    if (!image || sharing) return
     setShareMessage('')
+    setManualShare(false)
     setSharing(true)
     try {
-      await navigator.share({
-        title: shareTitle,
-        text: `${shareText}\n${resultUrl}`,
-        ...(canShareImage && shareFile ? { files: [shareFile] } : {}),
-      })
+      const bytes = Uint8Array.from(atob(image), (character) => character.charCodeAt(0))
+      const file = new File([bytes], `drawing-${id}.png`, { type: 'image/png' })
+      const shareData = { files: [file], text: shareText, title: shareTitle }
+      if (typeof navigator.share === 'function' && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        setManualShare(true)
+        setShareMessage('保存した作品画像を、Xの投稿画面で添付してください。')
+        saveArtwork()
+        window.open(xShareUrl, '_blank', 'noopener,noreferrer')
+      }
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        setShareMessage('共有できませんでした。XでシェアまたはURLコピーをお試しください。')
+        setManualShare(true)
+        setShareMessage(
+          '画像を共有できませんでした。「作品を保存する」で保存し、Xで添付してください。',
+        )
       }
     } finally {
       setSharing(false)
-    }
-  }
-
-  const copyResultUrl = async () => {
-    setShareMessage('')
-    try {
-      await navigator.clipboard.writeText(resultUrl)
-      setShareMessage('URLをコピーしました。')
-    } catch {
-      setShareMessage('URLをコピーできませんでした。ブラウザのアドレス欄からコピーしてください。')
     }
   }
 
@@ -256,46 +245,21 @@ function DrawingResult({
         <footer className="result-actions">
           {result && saved && (
             <>
-              {canShareImage ? (
-                <button
-                  type="button"
-                  className="result-share"
-                  disabled={sharing}
-                  onClick={() => void shareArtwork()}
-                >
-                  {sharing ? '共有中…' : '作品画像と定型文を共有する'}
-                </button>
-              ) : null}
-              <p className="result-route-note">
-                {canShareImage
-                  ? '共有先でXを選ぶと、作品画像と定型文を渡せます。反映内容はXの投稿画面で確認してください。'
-                  : 'この端末では画像付き共有に対応していません。「作品を保存する」で画像を保存し、Xの投稿画面で添付してください。'}
-              </p>
-              <a
+              <button
+                type="button"
                 className="result-share"
-                href={xShareUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                disabled={!image || sharing}
+                onClick={() => void shareArtworkToX()}
               >
-                Xの投稿画面を開く（定型文のみ）
-              </a>
-              {typeof navigator.share === 'function' && !canShareImage && (
-                <button
-                  type="button"
-                  className="result-home"
-                  disabled={sharing}
-                  onClick={() => void shareArtwork()}
-                >
-                  {sharing ? '共有中…' : '共有する'}
-                </button>
-              )}
-              <button type="button" className="result-home" onClick={() => void copyResultUrl()}>
-                URLをコピーする
+                {sharing ? '共有中…' : 'シェアする'}
               </button>
-              <p role="status" aria-live="polite">
-                {shareMessage}
-              </p>
             </>
+          )}
+          {shareMessage && <p role="status">{shareMessage}</p>}
+          {manualShare && (
+            <a className="result-share" href={xShareUrl} target="_blank" rel="noopener noreferrer">
+              Xの投稿画面を開く
+            </a>
           )}
           <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
             作品を保存する
