@@ -14,7 +14,7 @@ services:
       - .:/workspace
       - functions_node_modules:/workspace/functions/node_modules
     ports:
-      - "5000:5000"
+      - "${HOSTING_PORT:-5050}:5000"
       - "4000:4000"
       - "4400:4400"
       - "5001:5001"

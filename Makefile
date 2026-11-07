@@ -1,10 +1,11 @@
 # Docker Compose development commands
 VITE_MODE ?= prev
 FUNCTIONS_REGION ?= asia-northeast1
+HOSTING_PORT ?= 5050
 FRONTEND_ENV_FILE = .env.$(VITE_MODE).local
 PROJECT_ID = $(if $(wildcard $(FRONTEND_ENV_FILE)),$(shell awk -F= '/^FIREBASE_PROJECT_ID=/{print $$2; exit}' "$(FRONTEND_ENV_FILE)"),)
 FUNCTIONS_ENV_FILE = functions/.env.$(VITE_MODE).local
-COMPOSE = ENV_FILE=$(FRONTEND_ENV_FILE) FUNCTIONS_ENV_FILE=$(FUNCTIONS_ENV_FILE) VITE_MODE=$(VITE_MODE) docker compose --env-file $(FRONTEND_ENV_FILE)
+COMPOSE = ENV_FILE=$(FRONTEND_ENV_FILE) FUNCTIONS_ENV_FILE=$(FUNCTIONS_ENV_FILE) VITE_MODE=$(VITE_MODE) HOSTING_PORT=$(HOSTING_PORT) docker compose --env-file $(FRONTEND_ENV_FILE)
 
 .PHONY: install functions-build functions-watch emulators up down check
 

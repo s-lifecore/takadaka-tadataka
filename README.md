@@ -236,7 +236,7 @@ APIのデフォルト接続先は`/api`です。`make up`の間だけ、`http://
 
 Functionsの実装は`functions/src/**/*.ts`を編集します。`make up`実行中はコンテナ内で変更が自動的に`functions/lib`へビルドされ、Emulatorへ反映されます。`functions/lib`は生成物なのでコミットしません。
 
-ブラウザは`http://localhost:5173`、Hosting Emulatorは`http://localhost:5000`、Firebase Emulator UIは`http://localhost:4000`、Functions Emulatorは`http://localhost:5001`で確認します。終了時は次を実行します。
+ブラウザは`http://localhost:5173`、Hosting Emulatorは`http://localhost:5050`、Firebase Emulator UIは`http://localhost:4000`、Functions Emulatorは`http://localhost:5001`で確認します。Hosting Emulatorの内部ポートは5000番ですが、ホスト側は競合回避のため5050番に公開します。必要なら`HOSTING_PORT`で変更できます。
 
 ```bash
 make down
@@ -330,13 +330,13 @@ make up
 ngrok http 5173
 ```
 
-Firebase Hosting Emulatorをngrokで確認する場合は、Viteではなく5000番ポートを公開します。
+Firebase Hosting Emulatorをngrokで確認する場合は、Viteではなく5050番ポートを公開します。
 
 ```bash
-ngrok http 5000
+ngrok http 5050
 ```
 
-5173番はViteの開発サーバー、5000番はビルド済み`dist`を配信するHosting Emulatorです。どちらも`/api`はローカルのFunctions Emulatorへ接続します。
+5173番はViteの開発サーバー、5050番（変更した場合は指定した`HOSTING_PORT`）はビルド済み`dist`を配信するHosting Emulatorです。どちらも`/api`はローカルのFunctions Emulatorへ接続します。
 
 ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。Viteは`.ngrok-free.dev`と`.ngrok.app`を許可しており、APIリクエストはViteの`/api`プロキシ経由でDocker内のFunctions Emulatorへ転送されます。そのため、Functions Emulatorの5001番ポートを別途ngrokへ公開する必要はありません。
 
