@@ -10,8 +10,27 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import dayjs from 'dayjs'
+import Dexie, { type Table } from 'dexie'
 import { auth, db, signInAnon } from './firebase'
 import type { AIResult, TrailPoint } from '../types'
+import type { TimerSnapshot } from '../hooks/useTimer'
+
+const trailDB = new Dexie('tadataka-trails')
+trailDB.version(1).stores({ trails: 'id' })
+const localTrails: Table<{ id: string; trail: TrailPoint[]; timer?: TimerSnapshot }, string> =
+  trailDB.table('trails')
+
+export async function loadLocalTrail(id: string) {
+  return localTrails.get(id)
+}
+
+export async function saveLocalTrail(id: string, trail: TrailPoint[], timer: TimerSnapshot) {
+  await localTrails.put({ id, trail, timer })
+}
+
+export async function clearLocalTrail(id: string) {
+  await localTrails.delete(id)
+}
 
 let authentication: Promise<unknown> | null = null
 async function ensureUser() {

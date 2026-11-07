@@ -1,11 +1,40 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { prepareMotionPermission } from '../hooks/useDeviceOrientation'
+import { prepareWakeLockPermission } from '../hooks/useWakeLock'
 
 export function Theme() {
   const navigate = useNavigate()
+  const startingRef = useRef(false)
+  const activeRef = useRef(true)
+  const [starting, setStarting] = useState(false)
+  useEffect(() => {
+    activeRef.current = true
+    return () => {
+      activeRef.current = false
+    }
+  }, [])
+  const handleStart = async () => {
+    if (startingRef.current) return
+    startingRef.current = true
+    setStarting(true)
+    // どちらもクリック直後、awaitより前に呼び出す。
+    const wakeLockPermission = prepareWakeLockPermission()
+    const motionPermission = prepareMotionPermission()
+    await Promise.all([wakeLockPermission, motionPermission])
+    if (activeRef.current) navigate('/map')
+  }
   return (
     <main className="theme-page">
       <header className="theme-header">
-        <button onClick={() => navigate('/')}>〈 もどる</button>
+        <button
+          onClick={() => {
+            activeRef.current = false
+            navigate('/')
+          }}
+        >
+          〈 もどる
+        </button>
         <span>ひとりで遊ぶ</span>
         <span className="theme-compass" aria-hidden="true">
           ♧
@@ -77,8 +106,8 @@ export function Theme() {
             </p>
           </div>
         </aside>
-        <button className="theme-start" onClick={() => navigate('/map')}>
-          ♧ 冒険スタート！
+        <button className="theme-start" onClick={() => void handleStart()} disabled={starting}>
+          {starting ? '出発の準備中…' : '♧ 冒険スタート！'}
         </button>
         <p className="theme-hint">ボタンを押すと 3・2・1 で記録が始まるよ</p>
       </div>
