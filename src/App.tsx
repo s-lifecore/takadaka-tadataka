@@ -6,6 +6,13 @@ import { Collection } from './pages/Collection'
 import { Result } from './pages/Result'
 import { Theme } from './pages/Theme'
 import { Rules } from './pages/Rules'
+import { UnsupportedDevice } from './pages/UnsupportedDevice'
+
+const isPC = !window.matchMedia('(pointer: coarse)').matches
+const isTablet =
+  /iPad/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+  (/Android/i.test(navigator.userAgent) && !/Mobile/i.test(navigator.userAgent))
 
 type ErrorBoundaryProps = {
   children: ReactNode
@@ -50,18 +57,33 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, { hasError: boo
 export function App() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+
+  if (isTablet || !('geolocation' in navigator)) {
+    return <UnsupportedDevice />
+  }
+
   return (
-    <ErrorBoundary key={pathname} onHome={() => navigate('/', { replace: true })}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/collection" element={<Collection />} />
-        <Route path="/rules" element={<Rules />} />
-        <Route path="/playalone" element={<Theme />} />
-        <Route path="/map" element={<Game key={pathname} />} />
-        <Route path="/map/:id" element={<Game key={pathname} />} />
-        <Route path="/result/:id" element={<Result key={pathname} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+    <>
+      {isPC && (
+        <div className="pc-warning" role="alert">
+          <span className="material-icons" aria-hidden="true">
+            location_off
+          </span>
+          このデバイスじゃ歩いて絵が描けないよ。スマートフォンで冒険してみよう！
+        </div>
+      )}
+      <ErrorBoundary key={pathname} onHome={() => navigate('/', { replace: true })}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/collection" element={<Collection />} />
+          <Route path="/rules" element={<Rules />} />
+          <Route path="/playalone" element={<Theme />} />
+          <Route path="/map" element={<Game key={pathname} />} />
+          <Route path="/map/:id" element={<Game key={pathname} />} />
+          <Route path="/result/:id" element={<Result key={pathname} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
+    </>
   )
 }

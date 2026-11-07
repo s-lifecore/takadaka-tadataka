@@ -46,6 +46,7 @@ export function useGeolocation(
     }
   }, [angleBlocked, motionDetected])
   const [error, setError] = useState<string | null>(null)
+  const [isPositionUnavailable, setIsPositionUnavailable] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
   const watchIdRef = useRef<number | null>(null)
   const watchGenerationRef = useRef(0)
@@ -69,9 +70,11 @@ export function useGeolocation(
   const start = useCallback(() => {
     if (watchIdRef.current !== null) return
     setError(null)
+    setIsPositionUnavailable(false)
     if (!navigator.geolocation) {
       setIsLocating(false)
       setError('このブラウザは位置情報に対応していません')
+      setIsPositionUnavailable(true)
       return
     }
     setIsLocating(true)
@@ -80,6 +83,7 @@ export function useGeolocation(
       (pos) => {
         if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
         setError(null)
+        setIsPositionUnavailable(false)
         setIsLocating(false)
         const point: TrailPoint = {
           lat: pos.coords.latitude,
@@ -184,6 +188,7 @@ export function useGeolocation(
       (err) => {
         if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
         setIsLocating(false)
+        setIsPositionUnavailable(err.code === 2)
         stationaryAnchorRef.current = null
         stationarySampleCountRef.current = 0
         movementSamplesRef.current = []
@@ -192,9 +197,23 @@ export function useGeolocation(
         lastSampleTimeRef.current = null
         setIsStationary(false)
         setIsMoving(false)
-        setError(err.message)
+        switch (err.code) {
+          case 1:
+            setError(
+              '位置情報の許可が必要です。設定 → Safari/Chrome → 位置情報を「許可」に変更してください。設定を変更したら、再試行してください。',
+            )
+            break
+          case 2:
+            setError('GPS信号を取得できません。屋外に出て再試行してください。')
+            break
+          case 3:
+            setError('位置情報の取得がタイムアウトしました。再試行してください。')
+            break
+          default:
+            setError('位置情報を取得できません。端末の位置情報設定を確認して再試行してください。')
+        }
       },
-      { enableHighAccuracy: true, maximumAge: 0 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
     )
   }, [])
 
@@ -215,15 +234,22 @@ export function useGeolocation(
     }
   }, [])
 
+  const retry = useCallback(() => {
+    stop()
+    start()
+  }, [stop, start])
+
   return {
     trail,
     currentPosition,
     isStationary: isStationary && !motionDetected,
     isMoving: isMoving || motionDetected,
     error,
+    isPositionUnavailable,
     isLocating,
     start,
     stop,
+    retry,
     pause,
     resume,
   }
