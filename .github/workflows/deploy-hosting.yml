@@ -70,6 +70,11 @@ jobs:
           printf '%s' "$CLOUDINARY_UPLOAD_PRESET" | npx --yes firebase-tools@15.34.2 functions:secrets:set CLOUDINARY_UPLOAD_PRESET --data-file=- --project "$FIREBASE_PROJECT_ID"
           printf '%s' "$GROQ_API_KEY" | npx --yes firebase-tools@15.34.2 functions:secrets:set GROQ_API_KEY --data-file=- --project "$FIREBASE_PROJECT_ID"
 
+      - name: Configure Functions artifact cleanup
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || secrets.VITE_FIREBASE_PROJECT_ID }}
+        run: npx --yes firebase-tools@15.34.2 functions:artifacts:setpolicy --location asia-northeast1 --days 1 --project "$FIREBASE_PROJECT_ID"
+
       - name: Deploy Functions
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || secrets.VITE_FIREBASE_PROJECT_ID }}
