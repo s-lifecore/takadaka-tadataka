@@ -9,3 +9,4 @@ functions/.secret.local
 .firebase
 *-debug.log
 *.tsbuildinfo
+firestore-debug.log

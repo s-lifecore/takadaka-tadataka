@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { latLng } from 'leaflet'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
-import { AdvancedImage } from '@cloudinary/react'
-import { Cloudinary } from '@cloudinary/url-gen'
-import { auto } from '@cloudinary/url-gen/actions/resize'
-import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { judgeDrawing } from '../lib/gemini'
+import { judgeDrawing } from '../lib/groq'
+import { MapView } from '../components/MapView'
 import type { AIResult, TrailPoint } from '../types'
 
 const MIN_JUDGEMENT_MS = 3000
@@ -58,7 +56,6 @@ function LoadResult({ id }: { id: string }) {
       trail={drawing.trail}
       theme={drawing.theme}
       savedResult={drawing.result}
-      savedImagePublicId={drawing.imagePublicId}
     />
   )
 }
@@ -68,22 +65,31 @@ function DrawingResult({
   trail,
   theme,
   savedResult,
-  savedImagePublicId,
 }: {
   id: string
   trail: TrailPoint[]
   theme: string
   savedResult?: AIResult
-  savedImagePublicId?: string
 }) {
   const navigate = useNavigate()
   const [result, setResult] = useState<AIResult | null>(savedResult ?? null)
   const [judging, setJudging] = useState(!savedResult && trail.length >= 2)
   const [error, setError] = useState<string | null>(null)
   const [image, setImage] = useState<string | null>(null)
-  const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
+  const [sharing, setSharing] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
+  const [manualShare, setManualShare] = useState(false)
   const requested = useRef(false)
+  const distanceKm = useMemo(
+    () =>
+      trail.reduce((meters, point, index) => {
+        if (index === 0) return meters
+        const previous = trail[index - 1]
+        return meters + latLng(previous.lat, previous.lng).distanceTo([point.lat, point.lng])
+      }, 0) / 1000,
+    [trail],
+  )
 
   const handleCanvasReady = useCallback(
     async (base64: string) => {
@@ -99,9 +105,7 @@ function DrawingResult({
       try {
         const res = result ?? (await judgeDrawing(base64, theme))
         setResult(res)
-        const saved = await saveResult(id, res, base64)
-        const publicId = imagePublicId ?? saved.imagePublicId
-        setImagePublicId(publicId)
+        await saveResult(id, res, base64)
         setSaved(true)
       } catch {
         setError('判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
@@ -110,27 +114,49 @@ function DrawingResult({
         setJudging(false)
       }
     },
-    [id, theme, result, savedResult, imagePublicId],
+    [id, theme, result, savedResult],
   )
 
-  function saveArtwork() {
+  const saveArtwork = () => {
     if (!image) return
     const link = document.createElement('a')
     link.href = `data:image/png;base64,${image}`
-    link.download = `takadaka-tadataka-${new Date().toISOString().slice(0, 10)}.png`
+    link.download = `drawing-${id}.png`
     link.click()
   }
 
-  const cloudinary = new Cloudinary({
-    cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME },
-  })
-  const generatedImage = imagePublicId
-    ? cloudinary
-        .image(imagePublicId)
-        .format('auto')
-        .quality('auto')
-        .resize(auto().gravity(autoGravity()).width(500).height(500))
-    : null
+  const shareTitle = `お題「${theme}」に挑戦！`
+  const shareText = `${shareTitle} AIスコア: ${result?.score ?? 0}点\n歩いて絵を描くゲーム「高々忠敬」 #高々忠敬`
+  const xShareUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText })}`
+
+  const shareArtworkToX = async () => {
+    if (!image || sharing) return
+    setShareMessage('')
+    setManualShare(false)
+    setSharing(true)
+    try {
+      const bytes = Uint8Array.from(atob(image), (character) => character.charCodeAt(0))
+      const file = new File([bytes], `drawing-${id}.png`, { type: 'image/png' })
+      const shareData = { files: [file], text: shareText, title: shareTitle }
+      if (typeof navigator.share === 'function' && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        setManualShare(true)
+        setShareMessage('保存した作品画像を、Xの投稿画面で添付してください。')
+        saveArtwork()
+        window.open(xShareUrl, '_blank', 'noopener,noreferrer')
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setManualShare(true)
+        setShareMessage(
+          '画像を共有できませんでした。「作品を保存する」で保存し、Xで添付してください。',
+        )
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
 
   if (judging) {
     return (
@@ -151,28 +177,33 @@ function DrawingResult({
 
         <section className="result-artwork" aria-label="あなたの作品">
           <h2>あなたの作品</h2>
-          <div className="result-canvas">
-            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
-            {trail.length < 2 && <p>記録された軌跡がありません</p>}
+          <div className="result-route-heading">
+            <span>歩いた経路</span>
+            <p>
+              歩行距離 <strong>{distanceKm.toFixed(2)}</strong> km
+            </p>
           </div>
-          <p className="result-artwork-caption">地図を含まないGPSの線画</p>
+          {trail.length > 0 ? (
+            <div className="result-route-map" role="region" aria-label="歩行経路の地図">
+              <MapView trail={trail} fitTrail interactive={false} />
+            </div>
+          ) : (
+            <p className="result-message">記録された歩行経路がありません。</p>
+          )}
+          <p className="result-route-note">距離は記録されたGPSの軌跡から計算した目安です。</p>
+          <div hidden aria-hidden="true">
+            <TrailCanvas trail={trail} onReady={handleCanvasReady} />
+          </div>
         </section>
 
-        {generatedImage && (
-          <div className="w-64 h-64 mx-auto mt-4 border-2 border-gray-200 rounded-xl overflow-hidden">
-            <AdvancedImage cldImg={generatedImage} />
-          </div>
-        )}
-        {saved && <p className="result-message">保存しました</p>}
         <section className="result-score" aria-label="AIの採点結果" aria-busy={judging}>
           <h2>AIの採点結果</h2>
-          {result ? (
+          {result && saved ? (
             <>
               <p className="result-points">
                 {result.score}
                 <span>点</span>
               </p>
-              <p className="result-guess">AIの予想：{result.guess || '判定なし'}</p>
               <p className="result-reason">{result.reason}</p>
             </>
           ) : (
@@ -202,6 +233,24 @@ function DrawingResult({
         </section>
 
         <footer className="result-actions">
+          {result && saved && (
+            <>
+              <button
+                type="button"
+                className="result-share"
+                disabled={!image || sharing}
+                onClick={() => void shareArtworkToX()}
+              >
+                {sharing ? '共有中…' : 'シェアする'}
+              </button>
+            </>
+          )}
+          {shareMessage && <p role="status">{shareMessage}</p>}
+          {manualShare && (
+            <a className="result-share" href={xShareUrl} target="_blank" rel="noopener noreferrer">
+              Xの投稿画面を開く
+            </a>
+          )}
           <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
             作品を保存する
           </button>

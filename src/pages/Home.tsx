@@ -74,7 +74,7 @@ export function Home() {
   const clerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
   return (
     <main className="home-page mx-auto min-h-dvh max-w-[378px] px-5 pb-3 pt-[25px]">
-      <header className="home-top flex flex-wrap items-center justify-between gap-3">
+      <header className="home-top flex items-center justify-between gap-3">
         <span className="home-badge">
           <Icon kind="compass" />
           旅のスケッチブック

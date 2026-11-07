@@ -1,5 +1,24 @@
 import { apiRequest } from './api'
+import Dexie, { type Table } from 'dexie'
 import type { AIResult, TrailPoint } from '../types'
+import type { TimerSnapshot } from '../hooks/useTimer'
+
+const trailDB = new Dexie('tadataka-trails')
+trailDB.version(1).stores({ trails: 'id' })
+const localTrails: Table<{ id: string; trail: TrailPoint[]; timer?: TimerSnapshot }, string> =
+  trailDB.table('trails')
+
+export async function loadLocalTrail(id: string) {
+  return localTrails.get(id)
+}
+
+export async function saveLocalTrail(id: string, trail: TrailPoint[], timer: TimerSnapshot) {
+  await localTrails.put({ id, trail, timer })
+}
+
+export async function clearLocalTrail(id: string) {
+  await localTrails.delete(id)
+}
 
 type DrawingResponse = {
   id: string
@@ -43,7 +62,6 @@ export async function saveTrail(id: string, trail: TrailPoint[]) {
     headers: guestHeaders(id),
   })
 }
-
 export async function saveResult(id: string, result: AIResult, image: string) {
   return apiRequest<{ imagePublicId: string }>(`/drawings/${id}/result`, {
     method: 'POST',
@@ -55,3 +73,4 @@ export async function saveResult(id: string, result: AIResult, image: string) {
 export async function loadTrail(id: string): Promise<TrailPoint[]> {
   return (await loadDrawing(id)).trail ?? []
 }
+
