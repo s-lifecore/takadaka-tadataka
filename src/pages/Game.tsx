@@ -5,12 +5,21 @@ import { MapView } from '../components/MapView'
 import { Timer } from '../components/Timer'
 import { useDeviceOrientation } from '../hooks/useDeviceOrientation'
 import { useGeolocation } from '../hooks/useGeolocation'
-import { useTimer } from '../hooks/useTimer'
+import { useTimer, type TimerSnapshot } from '../hooks/useTimer'
 import { useWakeLock } from '../hooks/useWakeLock'
-import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
+import {
+  clearLocalTrail,
+  createDrawing,
+  loadLocalTrail,
+  loadTrail,
+  saveLocalTrail,
+  saveTrail,
+} from '../lib/drawings'
 import type { TrailPoint } from '../types'
 
 const GAME_SECONDS = 15 * 60
+const LOCAL_SAVE_ERROR =
+  'この端末に軌跡を一時保存できません。画面を閉じると未送信の軌跡が失われる可能性があります。'
 const GPS_LOADING_MIN_MS = 5000
 
 function useActivationError(ready: boolean, attempt: number) {
@@ -70,16 +79,32 @@ function StartCountdown() {
 function LoadGame({ id }: { id: string }) {
   const [trail, setTrail] = useState<TrailPoint[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [timer, setTimer] = useState<TimerSnapshot | undefined>(undefined)
   useEffect(() => {
     let active = true
-    loadTrail(id).then(
-      (value) => {
-        if (active) setTrail(value)
-      },
-      (reason: unknown) => {
-        if (active) setError(String(reason))
-      },
-    )
+    // Firestoreで所有者を確認してから、同じ作品の一時保存を復元する。
+    loadTrail(id)
+      .then(async (remoteTrail) => {
+        try {
+          const localTrail = await loadLocalTrail(id)
+          if (active) setTimer(localTrail?.timer)
+          return localTrail && localTrail.trail.length >= remoteTrail.length
+            ? localTrail.trail
+            : remoteTrail
+        } catch {
+          if (active) setLocalError(LOCAL_SAVE_ERROR)
+          return remoteTrail
+        }
+      })
+      .then(
+        (value) => {
+          if (active) setTrail(value)
+        },
+        (reason: unknown) => {
+          if (active) setError(String(reason))
+        },
+      )
     return () => {
       active = false
     }
@@ -92,7 +117,9 @@ function LoadGame({ id }: { id: string }) {
       </div>
     )
   if (!trail) return <p className="p-6">ゲームを読み込み中…</p>
-  return <PlayingGame id={id} initialTrail={trail} />
+  return (
+    <PlayingGame id={id} initialTrail={trail} initialLocalError={localError} initialTimer={timer} />
+  )
 }
 
 function WalkingIcon({ name }: { name: 'compass' | 'clock' | 'pause' | 'play' | 'flag' }) {
@@ -132,9 +159,20 @@ function WalkingIcon({ name }: { name: 'compass' | 'clock' | 'pause' | 'play' | 
   )
 }
 
-function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoint[] }) {
+function PlayingGame({
+  id,
+  initialTrail,
+  initialLocalError,
+  initialTimer,
+}: {
+  id: string
+  initialTrail: TrailPoint[]
+  initialLocalError: string | null
+  initialTimer?: TimerSnapshot
+}) {
   const navigate = useNavigate()
-  const [paused, setPaused] = useState(false)
+  const [paused, setPaused] = useState(initialTimer?.paused ?? initialTimer?.endAt === null)
+  const initiallyPaused = useRef(paused)
   const [wakeLockRetryCount, setWakeLockRetryCount] = useState(0)
   const [motionRetryCount, setMotionRetryCount] = useState(0)
   const {
@@ -156,13 +194,36 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     resume: resumeGPS,
   } = useGeolocation(initialTrail)
   const showWalkingWarning = isShaking
-  const { remaining, expired, start: startTimer, stop: stopTimer } = useTimer(GAME_SECONDS)
+  const {
+    remaining,
+    running,
+    expired,
+    start: startTimer,
+    stop: stopTimer,
+    getSnapshot,
+  } = useTimer(GAME_SECONDS, initialTimer)
   const { acquire, release, status: wakeLockStatus, error: wakeLockError } = useWakeLock()
   const showWakeLockError = useActivationError(wakeLockStatus === 'active', wakeLockRetryCount)
   const showMotionError = useActivationError(motionReady, motionRetryCount)
   const finishing = useRef(false)
+  const saved = useRef(false)
+  const expiryHandled = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState(initialLocalError)
+  // 逐次保存と完了時の削除を同じキューに入れ、古い書き込みによる復活を防ぐ。
+  const localWrites = useRef<Promise<void>>(Promise.resolve())
+
+  useEffect(() => {
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (saved.current) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [])
+
   const [minimumGPSLoading, setMinimumGPSLoading] = useState(true)
   const [gpsLoadingDismissed, setGPSLoadingDismissed] = useState(false)
   const showGPSLoading =
@@ -179,7 +240,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
   }, [])
 
   useEffect(() => {
-    startGPS()
+    if (!initiallyPaused.current) startGPS()
     acquire()
     return () => {
       stopGPS()
@@ -225,6 +286,14 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       startGPS()
     }
   }, [paused, saving, expired, pauseGPS, stopGPS, resumeGPS, startGPS])
+  useEffect(() => {
+    if (finishing.current || saved.current) return
+    const timer = { ...getSnapshot(), paused }
+    localWrites.current = localWrites.current
+      .then(() => saveLocalTrail(id, trail, timer))
+      .then(() => setLocalError(null))
+      .catch(() => setLocalError(LOCAL_SAVE_ERROR))
+  }, [id, trail, running, paused, getSnapshot])
 
   const handleFinish = useCallback(async () => {
     if (finishing.current) return
@@ -237,7 +306,15 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     setPaused(true)
     release()
     try {
+      const timer = { ...getSnapshot(), paused: true }
+      localWrites.current = localWrites.current
+        .then(() => saveLocalTrail(id, trail, timer))
+        .catch(() => setLocalError(LOCAL_SAVE_ERROR))
+      await localWrites.current
       await saveTrail(id, trail)
+      saved.current = true
+      // Firestore保存後の削除失敗は、保存済みの結果への遷移を妨げない。
+      await clearLocalTrail(id).catch(() => undefined)
       navigate(`/result/${id}`)
     } catch {
       setSaveError(
@@ -246,9 +323,12 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
       finishing.current = false
       setSaving(false)
     }
-  }, [id, navigate, pauseGPS, stopGPS, stopTimer, trail, release])
+  }, [id, navigate, pauseGPS, stopGPS, stopTimer, trail, release, getSnapshot])
   useEffect(() => {
-    if (expired) void handleFinish()
+    if (expired && !expiryHandled.current) {
+      expiryHandled.current = true
+      void handleFinish()
+    }
   }, [expired, handleFinish])
 
   const togglePause = useCallback(() => {
@@ -420,13 +500,18 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
             {saveError}
           </p>
         )}
+        {localError && (
+          <p className="walking-error" role="alert">
+            {localError}
+          </p>
+        )}
         <footer className="walking-footer">
           <div className="walking-actions">
             <button
               type="button"
               onClick={togglePause}
               aria-pressed={paused}
-              disabled={saving || expired}
+              disabled={saving || expired || !!saveError}
             >
               <WalkingIcon name={paused ? 'play' : 'pause'} />
               {paused ? '再開する' : '一時停止'}

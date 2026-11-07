@@ -10,6 +10,9 @@ body,
   padding: 0;
   font-family: system-ui, sans-serif;
 }
+body:has(.home-page) {
+  background: #f6efe3;
+}
 .home-page {
   background: #f6efe3;
   color: #705137;
@@ -24,19 +27,28 @@ body,
   font-size: 24px;
   line-height: 1;
 }
-.home-badge {
+.home-top {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #eee0c8;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+}
+.home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid #c8a97a;
   border-radius: 24px;
-  padding: 7px 13px;
+  padding: 5px 12px 5px 8px;
   font-size: 13px;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 .home-badge .home-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
 }
 .home-auth {
   display: flex;
@@ -236,6 +248,10 @@ body,
   color: #8e7b65;
 }
 .home-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+  margin-top: 18px;
 }
 .home-links button {
   display: flex;
@@ -329,9 +345,6 @@ body,
   border-radius: 10px;
 }
 @media (min-width: 403px) {
-  body:has(.home-page) {
-    background: #f6efe3;
-  }
   .home-page {
     min-height: 100dvh;
   }
@@ -339,19 +352,24 @@ body,
 
 /* Match the available viewport instead of framing every screen as a phone. */
 .home-page {
-  width: 100%;
-  max-width: none;
+  width: 90%;
+  max-width: 378px;
   min-height: 100dvh;
-  padding-right: max(22px, env(safe-area-inset-right));
-  padding-left: max(22px, env(safe-area-inset-left));
+  margin-left: auto;
+  margin-right: auto;
+  padding-right: 20px;
+  padding-left: 20px;
+  overflow-x: clip;
 }
 @media (min-width: 600px) and (max-width: 899px) {
   .home-page {
+    max-width: none;
     padding: 30px clamp(40px, 12vw, 110px);
   }
 }
 @media (min-width: 900px) {
   .home-page {
+    display: grid;
     width: 100%;
     max-width: none;
     min-height: 100dvh;
@@ -1073,8 +1091,9 @@ body:has(.theme-page) {
   display: flex;
   align-items: center;
   gap: 3px;
-  min-width: 74px;
-  min-height: 34px;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
   padding: 5px 10px;
   border: 1px solid #c89f76;
   border-radius: 11px;
@@ -1803,6 +1822,54 @@ body:has(.theme-page) {
 }
 .result-actions button:active:not(:disabled) {
   transform: translateY(2px);
+}
+
+.collection-state {
+  margin: 24px 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.collection-state button {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 1px solid #bc9162;
+  border-radius: 12px;
+}
+.collection-footer .collection-empty {
+  margin: 28px auto 0;
+  width: min(100%, 240px);
+  min-height: 48px;
+  padding: 12px 20px;
+  background: #d98a4f;
+  color: #fffaf0;
+  border: 1.5px solid #aa6332;
+  border-radius: 17px;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 5px 0 #9c572e;
+}
+.collection-footer .collection-empty:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #9c572e;
+}
+.collection-artwork img,
+.collection-artwork canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+  object-fit: contain;
+}
+.collection-card-info > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.collection-card-footer p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.collection-card-footer time {
+  flex-shrink: 0;
 }
 .error-page {
   display: grid;

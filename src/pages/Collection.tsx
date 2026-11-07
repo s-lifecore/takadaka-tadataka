@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { listDrawings } from '../lib/drawings'
+import { onAuthStateChanged } from 'firebase/auth'
+import dayjs from 'dayjs'
+import { auth } from '../lib/firebase'
+import { getDrawingImageUrl } from '../lib/cloudinary'
+import { loadSavedDrawings, type SavedDrawing } from '../lib/drawings'
 import { TrailCanvas } from '../components/TrailCanvas'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -20,34 +24,71 @@ function BookIcon() {
   )
 }
 
+function Artwork({ drawing }: { drawing: SavedDrawing }) {
+  const [failed, setFailed] = useState(false)
+  const imageUrl = drawing.imagePublicId ? getDrawingImageUrl(drawing.imagePublicId) : null
+  return imageUrl && !failed ? (
+    <img
+      src={imageUrl}
+      alt={`${drawing.theme}の作品`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  ) : drawing.trail.length >= 2 ? (
+    <div role="img" aria-label={`${drawing.theme}の線画`}>
+      <TrailCanvas trail={drawing.trail} />
+    </div>
+  ) : (
+    <p>作品画像がありません</p>
+  )
+}
+
 export function Collection() {
   const navigate = useNavigate()
-  const [drawings, setDrawings] = useState<Awaited<ReturnType<typeof listDrawings>>>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [drawings, setDrawings] = useState<SavedDrawing[]>([])
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     let active = true
-    setLoading(true)
-    setError(false)
-    listDrawings()
-      .then((value) => {
-        if (active) setDrawings(value)
-      })
-      .catch(() => {
-        if (active) setError(true)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    let request = 0
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      const currentRequest = ++request
+      setDrawings([])
+      setStatus('loading')
+      loadSavedDrawings()
+        .then((items) => {
+          if (active && currentRequest === request) {
+            setDrawings(items)
+            setStatus('ready')
+          }
+        })
+        .catch(() => {
+          if (active && currentRequest === request) setStatus('error')
+        })
+    })
     return () => {
       active = false
+      unsubscribe()
     }
   }, [attempt])
   return (
     <main className="collection-page">
       <div className="collection-content">
         <header className="collection-header">
+          <button type="button" aria-label="ホームに戻る" onClick={() => navigate('/')}>
+            <svg
+              width="23"
+              height="23"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m3 10 9-8 9 8v11h-7v-8h-4v8H3Z" />
+            </svg>
+          </button>
           <h1>作品帳</h1>
           <svg
             className="collection-compass"
@@ -75,67 +116,73 @@ export function Collection() {
         <div className="collection-total">
           <BookIcon />
           <span>保存した作品</span>
-          <strong>{loading || error ? '—' : drawings.length}作品</strong>
+          <strong>{status === 'ready' ? `${drawings.length}作品` : '—'}</strong>
         </div>
 
-        {loading && <p role="status">作品を読み込み中…</p>}
-        {error && (
-          <div role="alert">
-            <p>作品を読み込めませんでした。</p>
-            <button onClick={() => setAttempt((value) => value + 1)}>再試行する</button>
+        {status === 'loading' && (
+          <p className="collection-state" role="status">
+            作品を読み込み中…
+          </p>
+        )}
+        {status === 'error' && (
+          <div className="collection-state" role="alert">
+            <p>作品を取得できませんでした。通信環境を確認してください。</p>
+            <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+              もう一度読み込む
+            </button>
           </div>
         )}
-        {!loading && !error && drawings.length === 0 && <p>保存した作品はまだありません。</p>}
-        {!loading &&
-          !error &&
+        {status === 'ready' && drawings.length === 0 && (
+          <p className="collection-state">保存した作品はまだありません。</p>
+        )}
+        {status === 'ready' &&
           drawings.map((drawing, index) => (
             <article
-              className="collection-card"
               key={drawing.id}
+              className="collection-card"
               aria-label={`作品：${drawing.theme}`}
             >
               <div className="collection-card-header">
-                <span>No. {index + 1}</span>
-                <p>{drawing.theme}</p>
+                <span>No. {String(index + 1).padStart(3, '0')}</span>
+                <p>
+                  旅の記録 <i aria-hidden="true">✦</i>
+                </p>
               </div>
               <Link to={`/result/${drawing.id}`} aria-label={`${drawing.theme}の結果を見る`}>
                 <div className="collection-artwork">
-                  <TrailCanvas trail={drawing.trail ?? []} />
+                  <Artwork drawing={drawing} />
                 </div>
               </Link>
               <div className="collection-card-info">
-                <h3>{drawing.theme}</h3>
+                <div>
+                  <p>お題</p>
+                  <h3>{drawing.theme}</h3>
+                </div>
                 <div className="collection-score">
                   <span>AIスコア</span>
                   <strong>
-                    {drawing.result?.score}
+                    {drawing.result.score}
                     <span>点</span>
                   </strong>
                 </div>
               </div>
               <div className="collection-card-footer">
-                <p>{drawing.result?.reason}</p>
-                <time dateTime={drawing.createdAt}>{drawing.createdAt.slice(0, 10)}</time>
+                <p>{drawing.result.reason}</p>
+                {dayjs(drawing.savedAt).isValid() ? (
+                  <time dateTime={drawing.savedAt} aria-label="保存日">
+                    {dayjs(drawing.savedAt).format('YYYY.MM.DD')}
+                  </time>
+                ) : (
+                  <span>保存日不明</span>
+                )}
               </div>
             </article>
           ))}
 
         <p className="collection-memory">旅の思い出がここに増えていくよ</p>
         <footer className="collection-footer">
-          <button type="button" onClick={() => navigate('/')}>
-            <svg
-              width="23"
-              height="23"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m3 10 9-8 9 8v11h-7v-8h-4v8H3Z" />
-            </svg>
-            ホームに戻る
+          <button type="button" className="collection-empty" onClick={() => navigate('/playalone')}>
+            絵をかいてみよう
           </button>
         </footer>
       </div>
