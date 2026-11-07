@@ -9,20 +9,24 @@ services:
       - ${FUNCTIONS_ENV_FILE:-functions/.env.prev.local}
     environment:
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      VITE_MODE: ${VITE_MODE:-prev}
     volumes:
       - .:/workspace
       - functions_node_modules:/workspace/functions/node_modules
     ports:
+      - "5000:5000"
       - "4000:4000"
       - "4400:4400"
       - "5001:5001"
       - "8080:8080"
       - "9150:9150"
     command: >-
-      sh -c "npm ci --prefix functions &&
+      sh -c "cp functions/.env.$${VITE_MODE:-prev}.local functions/.secret.local &&
+      npm ci --prefix functions &&
+      until test -f dist/index.html; do sleep 1; done &&
       npm run build --prefix functions -- --watch &
-      exec firebase emulators:start --only functions,firestore
-      --project \"$${FIREBASE_PROJECT_ID}\" --host 0.0.0.0"
+      exec firebase emulators:start --only functions,firestore,hosting
+      --project \"$${FIREBASE_PROJECT_ID}\""
 
   frontend:
     image: node:24.22.2-bookworm-slim
@@ -30,7 +34,7 @@ services:
     env_file:
       - ${ENV_FILE:-.env.prev.local}
     environment:
-      VITE_API_BASE_URL: http://localhost:5001/${FIREBASE_PROJECT_ID}/asia-northeast1/api
+      VITE_API_BASE_URL: /api
       VITE_MODE: ${VITE_MODE:-prev}
     volumes:
       - .:/workspace
@@ -40,7 +44,8 @@ services:
     depends_on:
       - firebase-emulator
     command: >-
-      sh -c "npm ci && npm run dev -- --host 0.0.0.0 --mode $${VITE_MODE:-prev}"
+      sh -c "npm ci && npm run build &&
+      npm run dev -- --host 0.0.0.0 --mode $${VITE_MODE:-prev}"
 
 volumes:
   frontend_node_modules:

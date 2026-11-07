@@ -1,30 +1,41 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
-  resolve: {
-    extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
-  },
-  server: {
-    allowedHosts: ['.ngrok-free.dev'],
-  },
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      manifest: {
-        name: '高々忠敬',
-        short_name: '高々忠敬',
-        description: '歩いて絵を描く、位置情報お絵かきゲーム',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-        ],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const projectId = env.FIREBASE_PROJECT_ID || 'tadataka-local'
+
+  return {
+    resolve: {
+      extensions: ['.tsx', '.ts', '.mjs', '.js', '.mts', '.jsx', '.json'],
+    },
+    server: {
+      allowedHosts: ['.ngrok-free.dev', '.ngrok.app'],
+      proxy: {
+        '/api': {
+          target: `http://firebase-emulator:5001/${projectId}/asia-northeast1`,
+          changeOrigin: true,
+        },
       },
-    }),
-  ],
+    },
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        manifest: {
+          name: '高々忠敬',
+          short_name: '高々忠敬',
+          description: '歩いて絵を描く、位置情報お絵かきゲーム',
+          theme_color: '#ffffff',
+          background_color: '#ffffff',
+          display: 'standalone',
+          icons: [
+            { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          ],
+        },
+      }),
+    ],
+  }
 })

@@ -34,6 +34,8 @@ make up
 
 Functionsは`functions/src/**/*.ts`を正本とし、`make up`のDockerコンテナ内TypeScript監視ビルドでEmulatorへ反映します。`functions/lib`は生成物です。
 
+Docker内のViteは`/api`をFunctions Emulatorへプロキシします。ngrokでスマートフォンから確認するときは`make up`の後に`ngrok http 5173`を実行し、Functionsの5001番ポートを直接公開しないでください。
+
 スマートフォンなど同一LANの端末から確認する場合は、次を使用します。
 
 ```bash

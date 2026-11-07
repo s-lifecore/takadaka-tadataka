@@ -1,4 +1,4 @@
-const apiBaseUrl = '/api'
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 let getAuthToken: (() => Promise<string | null>) | null = null
 
 export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null) {

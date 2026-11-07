@@ -177,7 +177,7 @@ Firestoreへのブラウザ直接アクセスは行わず、Firebase Functions�
 - Git
 - Firebase プロジェクト（バックエンド担当が作成）
 
-Docker内の実行バージョンは、フロントエンドがNode.js `24.22.1`、Firebase Functions EmulatorがNode.js `20`です。Functionsは`functions/package.json`の本番ランタイム設定に合わせています。
+Docker内の実行バージョンは、フロントエンドがNode.js `24.22.2`、Firebase Functions EmulatorがNode.js `20`、Emulator用Javaが`21`です。Functionsは`functions/package.json`の本番ランタイム設定に合わせています。
 
 ### インストール
 
@@ -222,6 +222,8 @@ make up
 
 `make up`は`.env.prev.local`の`FIREBASE_PROJECT_ID`と`functions/.env.prev.local`を読み込み、Docker Compose内でFirebase Emulator、FunctionsのTypeScript監視ビルド、Viteを同時に起動します。ホスト側のNode.js、Firebase CLI、Javaは不要です。
 
+起動時にFunctions用の環境ファイルからEmulator専用の`functions/.secret.local`をコンテナ内で生成します。このファイルはGitに含めず、ローカルのSecret Manager代わりに使用します。
+
 ```bash
 cp functions/.env.example functions/.env.prev.local
 # functions/.env.prev.local にローカル用のClerk / Cloudinary設定を記入
@@ -231,7 +233,7 @@ APIのデフォルト接続先は`/api`です。`make up`の間だけ、`http://
 
 Functionsの実装は`functions/src/**/*.ts`を編集します。`make up`実行中はコンテナ内で変更が自動的に`functions/lib`へビルドされ、Emulatorへ反映されます。`functions/lib`は生成物なのでコミットしません。
 
-ブラウザは`http://localhost:5173`、Firebase Emulator UIは`http://localhost:4000`、Functions Emulatorは`http://localhost:5001`で確認します。終了時は次を実行します。
+ブラウザは`http://localhost:5173`、Hosting Emulatorは`http://localhost:5000`、Firebase Emulator UIは`http://localhost:4000`、Functions Emulatorは`http://localhost:5001`で確認します。終了時は次を実行します。
 
 ```bash
 make down
@@ -299,14 +301,22 @@ make up
 ngrok http 5173
 ```
 
-ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。現在の確認用ホスト `chef-unicycle-nanometer.ngrok-free.dev` は `vite.config.ts` の `server.allowedHosts` に登録済みです。URLが変わった場合は、この配列を新しいホスト名に更新してください。
+Firebase Hosting Emulatorをngrokで確認する場合は、Viteではなく5000番ポートを公開します。
+
+```bash
+ngrok http 5000
+```
+
+5173番はViteの開発サーバー、5000番はビルド済み`dist`を配信するHosting Emulatorです。どちらも`/api`はローカルのFunctions Emulatorへ接続します。
+
+ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで開きます。Viteは`.ngrok-free.dev`と`.ngrok.app`を許可しており、APIリクエストはViteの`/api`プロキシ経由でDocker内のFunctions Emulatorへ転送されます。そのため、Functions Emulatorの5001番ポートを別途ngrokへ公開する必要はありません。
 
 1. ngrokの確認画面が出た場合は「Visit Site」で進みます。
 2. ゲームを開始し、位置情報を許可します。「傾きセンサーを有効にする」が表示された場合は、ボタンを押して許可します。
 3. 安全な場所で立ち止まって端末を水平に近づけ、警告が表示されることを確認します。
 4. 警告中は「軌跡」の点数が増えず、端末を30度以上傾けると警告が消えることを確認します。記録の再開は、画面を見ずに数メートル移動してから立ち止まって確認してください。GPS精度が30mを超える場合や移動距離が3m未満の場合も点は追加されません。
 
-確認中は開発サーバーとngrokの両方を起動したままにしてください。終了時はそれぞれのターミナルで `Ctrl+C` を押します。コードを変更すると開発サーバー経由で反映されます。
+確認中はDocker Composeとngrokの両方を起動したままにしてください。終了時はngrokのターミナルで`Ctrl+C`、Composeは別ターミナルで`make down`を実行します。コードを変更するとDocker内のVite経由で反映されます。
 
 ---
 

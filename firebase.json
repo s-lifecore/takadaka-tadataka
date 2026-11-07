@@ -7,6 +7,13 @@
       { "source": "**", "destination": "/index.html" }
     ]
   },
+  "emulators": {
+    "functions": { "host": "0.0.0.0", "port": 5001 },
+    "firestore": { "host": "0.0.0.0", "port": 8080 },
+    "hosting": { "host": "0.0.0.0", "port": 5000 },
+    "ui": { "host": "0.0.0.0", "port": 4000 },
+    "hub": { "host": "0.0.0.0", "port": 4400 }
+  },
   "firestore": { "rules": "firestore.rules" },
   "functions": { "source": "functions" }
 }
