@@ -128,13 +128,15 @@ body:has(.home-page) {
   transition: box-shadow 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
-.home-auth a .material-icons {
+.home-auth a .material-icons,
+.home-auth button .material-icons {
   font-size: 18px;
   width: 18px;
   height: 18px;
 }
 /* state layer */
-.home-auth a::before {
+.home-auth a::before,
+.home-auth button::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -143,20 +145,22 @@ body:has(.home-page) {
   transition: opacity 0.2s;
   border-radius: inherit;
 }
-.home-auth a:hover::before {
+.home-auth a:hover::before,
+.home-auth button:hover::before {
   opacity: 0.08;
 }
-.home-auth a:active::before {
+.home-auth a:active::before,
+.home-auth button:active::before {
   opacity: 0.14;
 }
-/* Outlined button（サインイン） */
-.home-auth .home-signin {
+/* Outlined button（サインアップ） */
+.home-auth .home-signup {
   border: 1px solid #c89f76;
   background: transparent;
   color: #7c5230;
 }
 /* Filled button（ログイン） */
-.home-auth .home-login {
+.home-auth .home-signin {
   border: none;
   background: #df894e;
   color: #fffaf0;
@@ -434,12 +438,42 @@ body:has(.home-page) {
     max-width: none;
     min-height: 100dvh;
     padding: clamp(24px, 4vh, 64px) clamp(32px, 6vw, 120px);
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'header header'
+      'left right'
+      'footer footer';
     column-gap: clamp(32px, 6vw, 140px);
     align-content: center;
   }
   .home-top {
-    margin-bottom: clamp(24px, 5vh, 64px);
+    grid-area: header;
+    width: min(100%, 1180px);
+    margin: 0 auto clamp(24px, 5vh, 64px);
+  }
+  .home-left,
+  .home-right {
+    min-width: 0;
+  }
+  .home-left {
+    grid-area: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(28px, 5vh, 64px);
+  }
+  .home-right {
+    grid-area: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .home-title {
+    width: 100%;
+    margin: 0;
+    text-align: center;
   }
   .home-title h1 {
     font-size: clamp(40px, 4vw, 72px);
@@ -447,13 +481,24 @@ body:has(.home-page) {
   .home-title p {
     font-size: clamp(14px, 1.2vw, 20px);
   }
+  .home-title > span {
+    margin-left: auto;
+  }
   .home-picture {
+    align-self: center;
     width: 100%;
   }
   .home-illustration {
     max-height: 44vh;
   }
   .home-adventure {
+    align-self: start;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0;
     padding: clamp(20px, 2.5vw, 40px);
   }
   .home-adventure h2 {
@@ -466,7 +511,12 @@ body:has(.home-page) {
   .home-links button {
     padding: clamp(14px, 2vh, 28px) 8px;
   }
+  .home-links {
+    width: 100%;
+    margin-top: clamp(18px, 3vh, 32px);
+  }
   .home-footer {
+    grid-area: footer;
     margin-top: clamp(24px, 4vh, 56px);
   }
 }
