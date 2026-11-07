@@ -52,12 +52,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, { hasError: boo
 
 export function App() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
 
   if (!('geolocation' in navigator)) {
     return <UnsupportedDevice />
   }
 
-  const navigate = useNavigate()
   return (
     <>
       {isPC && (
@@ -68,18 +68,18 @@ export function App() {
           このデバイスじゃ歩いて絵が描けないよ。スマートフォンで冒険してみよう！
         </div>
       )}
-    <ErrorBoundary key={pathname} onHome={() => navigate('/', { replace: true })}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/collection" element={<Collection />} />
-        <Route path="/rules" element={<Rules />} />
-        <Route path="/playalone" element={<Theme />} />
-        <Route path="/map" element={<Game key={pathname} />} />
-        <Route path="/map/:id" element={<Game key={pathname} />} />
-        <Route path="/result/:id" element={<Result key={pathname} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+      <ErrorBoundary key={pathname} onHome={() => navigate('/', { replace: true })}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/collection" element={<Collection />} />
+          <Route path="/rules" element={<Rules />} />
+          <Route path="/playalone" element={<Theme />} />
+          <Route path="/map" element={<Game key={pathname} />} />
+          <Route path="/map/:id" element={<Game key={pathname} />} />
+          <Route path="/result/:id" element={<Result key={pathname} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
     </>
   )
 }

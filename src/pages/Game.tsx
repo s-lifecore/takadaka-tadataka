@@ -8,6 +8,7 @@ import { useGeolocation } from '../hooks/useGeolocation'
 import { useTimer } from '../hooks/useTimer'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { createDrawing, loadTrail, saveTrail } from '../lib/drawings'
+import { UnsupportedDevice } from './UnsupportedDevice'
 import type { TrailPoint } from '../types'
 
 const GAME_SECONDS = 15 * 60
@@ -136,6 +137,7 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     currentPosition,
     isLocating,
     error: gpsError,
+    isPositionUnavailable,
     start: startGPS,
     stop: stopGPS,
     pause: pauseGPS,
@@ -233,6 +235,8 @@ function PlayingGame({ id, initialTrail }: { id: string; initialTrail: TrailPoin
     }
     setPaused((value) => !value)
   }, [paused, resumeGPS, startGPS, pauseGPS, stopTimer, acquire])
+
+  if (isPositionUnavailable) return <UnsupportedDevice />
 
   return (
     <main className="walking-page">
