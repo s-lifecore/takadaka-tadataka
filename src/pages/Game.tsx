@@ -15,6 +15,7 @@ import {
   saveLocalTrail,
   saveTrail,
 } from '../lib/drawings'
+import { UnsupportedDevice } from './UnsupportedDevice'
 import type { TrailPoint } from '../types'
 
 const GAME_SECONDS = 15 * 60
@@ -188,6 +189,7 @@ function PlayingGame({
     currentPosition,
     isLocating,
     error: gpsError,
+    isPositionUnavailable,
     start: startGPS,
     stop: stopGPS,
     retry: retryGPS,
@@ -345,6 +347,8 @@ function PlayingGame({
     }
     setPaused((value) => !value)
   }, [paused, resumeGPS, startGPS, pauseGPS, stopTimer, acquire])
+
+  if (isPositionUnavailable) return <UnsupportedDevice />
 
   return (
     <main className="walking-page">

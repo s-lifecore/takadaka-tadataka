@@ -46,6 +46,7 @@ export function useGeolocation(
     }
   }, [angleBlocked, motionDetected])
   const [error, setError] = useState<string | null>(null)
+  const [isPositionUnavailable, setIsPositionUnavailable] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
   const watchIdRef = useRef<number | null>(null)
   const watchGenerationRef = useRef(0)
@@ -69,9 +70,11 @@ export function useGeolocation(
   const start = useCallback(() => {
     if (watchIdRef.current !== null) return
     setError(null)
+    setIsPositionUnavailable(false)
     if (!navigator.geolocation) {
       setIsLocating(false)
       setError('このブラウザは位置情報に対応していません')
+      setIsPositionUnavailable(true)
       return
     }
     setIsLocating(true)
@@ -80,6 +83,7 @@ export function useGeolocation(
       (pos) => {
         if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
         setError(null)
+        setIsPositionUnavailable(false)
         setIsLocating(false)
         const point: TrailPoint = {
           lat: pos.coords.latitude,
@@ -184,6 +188,7 @@ export function useGeolocation(
       (err) => {
         if (generation !== watchGenerationRef.current || watchIdRef.current === null) return
         setIsLocating(false)
+        setIsPositionUnavailable(err.code === 2)
         stationaryAnchorRef.current = null
         stationarySampleCountRef.current = 0
         movementSamplesRef.current = []
@@ -240,6 +245,7 @@ export function useGeolocation(
     isStationary: isStationary && !motionDetected,
     isMoving: isMoving || motionDetected,
     error,
+    isPositionUnavailable,
     isLocating,
     start,
     stop,
