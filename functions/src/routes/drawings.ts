@@ -4,25 +4,12 @@ import { authenticate } from '../auth/clerk.js'
 import { HttpError, send, sendError } from '../errors.js'
 import { uploadArtworkImage } from '../services/cloudinary.js'
 import { createDrawing, loadOwnedDrawing, saveResult, saveTrail } from '../services/drawings.js'
+import { scoreDrawing } from '../services/groq.js'
 
 function normalizePath(request: Request) {
   const path = request.path.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean)
   if (path[0] === 'api') path.shift()
   return path
-}
-
-function validateResult(value: unknown): value is { score: number; guess: string; reason: string } {
-  if (!value || typeof value !== 'object') return false
-  const result = value as Record<string, unknown>
-  return (
-    typeof result.score === 'number' &&
-    result.score >= 0 &&
-    result.score <= 100 &&
-    typeof result.guess === 'string' &&
-    result.guess.length <= 200 &&
-    typeof result.reason === 'string' &&
-    result.reason.length <= 2000
-  )
 }
 
 export async function handleDrawings(request: Request, response: Response): Promise<void> {
@@ -55,13 +42,13 @@ export async function handleDrawings(request: Request, response: Response): Prom
     }
 
     if (path[2] === 'result' && request.method === 'POST') {
-      const { result, image } = request.body ?? {}
-      if (!validateResult(result)) throw new HttpError(400, 'Invalid result')
+      const { image } = request.body ?? {}
       const drawing = await loadOwnedDrawing(path[1], userId, guestToken)
+      const result = await scoreDrawing({ theme: drawing.data.theme, imageBase64: image })
       let imagePublicId = drawing.data.imagePublicId as string | undefined
       if (!imagePublicId) imagePublicId = await uploadArtworkImage(image, path[1])
       await saveResult(path[1], userId, guestToken, result, imagePublicId)
-      send(response, 200, { imagePublicId })
+      send(response, 200, { result, imagePublicId })
       return
     }
 

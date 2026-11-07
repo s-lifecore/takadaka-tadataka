@@ -4,7 +4,6 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { loadDrawing, saveResult } from '../lib/drawings'
 import { Judgement } from './Judgement'
 import { TrailCanvas } from '../components/TrailCanvas'
-import { judgeDrawing } from '../lib/groq'
 import { MapView } from '../components/MapView'
 import type { AIResult, TrailPoint } from '../types'
 
@@ -103,9 +102,8 @@ function DrawingResult({
         window.setTimeout(resolve, MIN_JUDGEMENT_MS)
       })
       try {
-        const res = result ?? (await judgeDrawing(base64, theme))
-        setResult(res)
-        await saveResult(id, res, base64)
+        const response = await saveResult(id, base64)
+        setResult(response.result)
         setSaved(true)
       } catch {
         setError('判定または保存に失敗しました。通信環境を確認して、もう一度お試しください。')
@@ -114,7 +112,7 @@ function DrawingResult({
         setJudging(false)
       }
     },
-    [id, theme, result, savedResult],
+    [id, savedResult],
   )
 
   const saveArtwork = () => {

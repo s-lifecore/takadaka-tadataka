@@ -8,15 +8,14 @@
     "build": "npm run typecheck && vite build",
     "deploy:hosting": "node scripts/deploy-hosting.mjs",
     "functions:build": "npm run build --prefix functions",
+    "functions:test": "npm test --prefix functions",
     "functions:watch": "npm run build --prefix functions -- --watch",
     "functions:serve": "npm run build --prefix functions && npx --yes firebase-tools@15.34.2 emulators:start --only functions,firestore --project \"${FIREBASE_PROJECT_ID:?FIREBASE_PROJECT_ID is required}\"",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{js,json,ts}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{js,json,ts}\"",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit --pretty false",
-    "start:api": "node --env-file-if-exists=.env.local server/index.mjs",
-    "test:ai": "node --test server/scoring.test.mjs"
+    "typecheck": "tsc --noEmit --pretty false"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.11",

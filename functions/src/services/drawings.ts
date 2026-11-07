@@ -49,7 +49,7 @@ export async function saveResult(
   id: string,
   userId: string | null,
   guestToken: string | undefined,
-  result: { score: number; guess: string; reason: string },
+  result: { score: number; reason: string },
   imagePublicId: string,
 ) {
   const drawing = await loadOwnedDrawing(id, userId, guestToken)

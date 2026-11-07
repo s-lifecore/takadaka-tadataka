@@ -201,11 +201,10 @@ VITE_CLERK_PUBLISHABLE_KEY=...
 FIREBASE_PROJECT_ID=...
 VITE_CLOUDINARY_CLOUD_NAME=...
 VITE_CLOUDINARY_UPLOAD_PRESET=...
-GROQ_API_KEY=...
 ```
 
 Functionsのローカル用設定は`functions/.env.example`をテンプレートにし、フロントと同じモードの`functions/.env.prev.local`へ作成します。ここにはSecretを置くため、Gitへコミットしません。
-`GROQ_API_KEY` はGroqで発行したAPIキーです。画像対応モデルへのアクセス権とAPIの利用残高も確認してください。秘密キーには `VITE_` を付けません。Firebase設定は認証・保存用として引き続き使用できますが、採点には不要です。
+`GROQ_API_KEY`と`GROQ_MODEL`もFunctions側の環境ファイルへ設定します。`GROQ_API_KEY`はGroqで発行したAPIキーで、秘密キーには`VITE_`を付けません。Firebase Functions Emulatorと本番Functionsの両方が同じ採点APIを使用します。
 
 ### 開発サーバー起動
 
@@ -215,6 +214,8 @@ CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 CLOUDINARY_UPLOAD_PRESET=...
+GROQ_API_KEY=...
+GROQ_MODEL=qwen/qwen3.8-27b
 ```
 
 ### Dockerでの開発サーバー起動
@@ -239,7 +240,7 @@ ngrokのHTTPS URLをスマートフォンで開いて確認します。手動で
 
 `make up`は`.env.prev.local`の`FIREBASE_PROJECT_ID`と`functions/.env.prev.local`を読み込み、Docker Compose内でFirebase Emulator、FunctionsのTypeScript監視ビルド、Viteを起動します。ViteはFunctions APIが応答可能になってから起動するため、起動直後に`/playalone`から開始してもゲーム開始APIを先に呼び出しません。ホスト側のNode.js、Firebase CLI、Javaは不要です。
 
-起動時にFunctions用の環境ファイルからEmulator専用の`functions/.secret.local`をコンテナ内で生成します。このファイルはGitに含めず、ローカルのSecret Manager代わりに使用します。
+Functions Emulatorは`functions/.env.<mode>.local`（通常は`functions/.env.prev.local`）を直接利用します。`functions/.secret.local`は生成・編集しません。
 
 ```bash
 cp functions/.env.example functions/.env.prev.local
@@ -300,7 +301,7 @@ secrets.VITE_CLERK_PUBLISHABLE_KEY
 secrets.CLERK_SECRET_KEY
 secrets.CLOUDINARY_API_KEY
 secrets.CLOUDINARY_API_SECRET
-GROQ_API_KEY
+secrets.GROQ_API_KEY
 ```
 
 `FIREBASE_SERVICE_ACCOUNT`はHostingとFunctionsのデプロイに使用します。FunctionsのSecretはGHAがFirebase Secret Managerへ登録します。
@@ -366,23 +367,9 @@ ngrokが表示するHTTPS URLをスマートフォンのSafariまたはChromeで
 
 ## 採点APIの本番運用
 
-開発・previewではViteが `/api/judge-drawing` を処理します。静的ビルドにはAPIサーバーや秘密キーは含まれません。
-
-本番用APIはNode.js 22.9以降（推奨24）で起動できます。
-
-```bash
-npm run start:api
-```
-
-環境変数は `GROQ_API_KEY`、`GROQ_MODEL`（既定 `qwen/qwen3.8-27b`）、必要に応じて `PORT`（既定3001）、`HOST`（既定127.0.0.1）です。本番ではデプロイ先のシークレット設定を使用してください。コンテナでは必要に応じて `HOST=0.0.0.0` にします。
-
-Firebase Hosting等から公開する場合は、APIをCloud Run等に配置し、同じオリジンの `/api/judge-drawing` をAPIへ転送してください。SPAへの書き換えよりAPI転送を優先します。静的ファイルをアップロードするだけでは採点できません。公開前にデプロイ先で認証・レート制限を設定してください。現時点のAPIは開発・チーム検証用で、利用者認証は実装していません。
+開発・preview・本番の`/api/judge-drawing`は、すべてFirebase FunctionsのAPIで処理します。Viteはフロントエンドの配信とFunctions Emulatorへの`/api`プロキシだけを担当し、Groq APIキーは読み込みません。
 
 Groqの画像入力を使用し、採点結果は `{ score, reason }` のままです。画像は採点のためGroqに送信されます。最大3MBのPNGを受け付け、一時的な5xxと通信失敗だけ最大2回再試行します。429、認証失敗、不正な回答は再試行しません。
-
-```bash
-npm run test:ai
-```
 
 
 ## 注意事項
@@ -408,7 +395,7 @@ src/
 ├── lib/
 │   ├── api         # Functions API呼び出し
 │   ├── drawings    # 作品APIクライアント
-│   └── groq        # 採点サーバー呼び出し（AI判定）
+│   └── groq        # Functionsの採点API呼び出し（AI判定）
 └── pages/
     ├── Home        # ホーム画面（フロントB）
     ├── Game        # プレイ中画面（フロントA中心）
@@ -422,21 +409,21 @@ src/
 
 ### Groqによる画像判定
 
-`.env.local` に設定し、開発サーバーを再起動します。
+`functions/.env.prev.local`または`functions/.env.prod.local`に設定し、Functions EmulatorまたはFunctionsを再起動・再デプロイします。
 
 ```dotenv
 GROQ_API_KEY=your_groq_api_key
 GROQ_MODEL=qwen/qwen3.8-27b
 ```
 
-採点にはGroqを使用します。キーはサーバー専用で、`VITE_` を付けません。
+採点にはGroqを使用します。キーはFunctions専用で、`VITE_`を付けません。
 `/ai-test.html` で検証できます。画像対応とJSON出力の公式仕様: [Groq Vision](https://console.groq.com/docs/vision)。
 ## ページ一覧とURL
 
 | URL | 画面 |
 | --- | --- |
 | `/` | ホーム |
-| `/collection` | 作品帳（ログイン必須。現状はサンプル表示） |
+| `/collection` | 作品帳（ログイン必須） |
 | `/map` | 3秒カウントダウン・Firestore作品作成 |
 | `/map/:id` | 地図・GPS・15分タイマー |
 | `/result/:id` | AI採点・結果の保存と表示 |
@@ -445,19 +432,9 @@ GROQ_MODEL=qwen/qwen3.8-27b
 完了ボタンまたは時間切れで軌跡を保存し、結果画面では同じIDの作品を読み込みます。
 保存済みの採点結果は再判定せず表示します。「ホームに戻る」は `/` へ移動します。
 ClerkのPublishable Keyが設定されている場合はログインUIが表示されます。作品の作成・読込・軌跡・結果保存はFirebase Functions APIへ接続します。未設定の場合、ゲームは起動できますがClerkログインと実環境APIの確認はできません。
-プレイ途中の再読み込みでは未保存の軌跡とタイマーは復元しません。
+プレイ途中の再読み込みではIndexedDBから未送信の軌跡とタイマーを復元します。保存に失敗した場合は結果画面から再試行できます。
 Firebase Hosting の直接アクセスは `firebase.json` のリライトで対応します。
 
 お題画面: `/playalone` → `pages/Theme.tsx`
 
-### 採点APIのCloud Run設定
-
-`firebase.json` は `/api/**` を `asia-northeast1` のCloud Runサービス `drawing-scoring` へ転送します。Hostingを公開する前に、同じFirebaseプロジェクトへAPIを配置してください。
-
-```bash
-gcloud run deploy drawing-scoring --source . --region asia-northeast1 --project YOUR_PROJECT_ID --allow-unauthenticated --timeout 120 --set-secrets GROQ_API_KEY=GROQ_API_KEY:latest --set-env-vars GROQ_MODEL=qwen/qwen3.8-27b
-```
-
-Secret Managerに `GROQ_API_KEY` を登録し、Cloud Runの実行サービスアカウントにそのシークレットの参照権限を付けてください。Dockerのビルド対象はserverのみで、ローカルの環境変数ファイルは含まれません。APIを更新するときもCloud Runを再デプロイします。HostingのデプロイだけではAPIは更新されません。
-
-作品帳は現在ログイン中の匿名ユーザーの採点済み作品を表示します。別ブラウザやサイトデータの削除後には、以前の匿名ユーザーの作品は表示されません。
+Functionsのデプロイ時には、GHAが`GROQ_API_KEY`をFirebase Functions Secretへ登録します。ローカルでは`functions/.env.*.local`をFunctions Emulatorが読み込みます。

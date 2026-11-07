@@ -7,6 +7,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test lib/services/groq.test.js",
     "serve": "npm run build && npx --yes firebase-tools@15.34.2 emulators:start --only functions,firestore",
     "deploy": "npm run build && npx --yes firebase-tools@15.34.2 deploy --only functions"
   },

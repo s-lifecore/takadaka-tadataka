@@ -72,10 +72,10 @@ export async function saveTrail(id: string, trail: TrailPoint[]) {
     headers: guestHeaders(id),
   })
 }
-export async function saveResult(id: string, result: AIResult, image: string) {
-  return apiRequest<{ imagePublicId: string }>(`/drawings/${id}/result`, {
+export async function saveResult(id: string, image: string) {
+  return apiRequest<{ result: AIResult; imagePublicId: string }>(`/drawings/${id}/result`, {
     method: 'POST',
-    body: JSON.stringify({ result, image: `data:image/png;base64,${image}` }),
+    body: JSON.stringify({ image: `data:image/png;base64,${image}` }),
     headers: guestHeaders(id),
   })
 }

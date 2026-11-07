@@ -21,8 +21,7 @@ services:
       - "8080:8080"
       - "9150:9150"
     command: >-
-      sh -c "cp functions/.env.$${VITE_MODE:-prev}.local functions/.secret.local &&
-      npm ci --prefix functions &&
+      sh -c "npm ci --prefix functions &&
       until test -f dist/index.html; do sleep 1; done &&
       npm run build --prefix functions -- --watch &
       exec firebase emulators:start --only functions,firestore,hosting
