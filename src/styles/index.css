@@ -1886,6 +1886,17 @@ body:has(.theme-page) {
   transform: translateY(2px);
 }
 
+.result-actions .result-share {
+  display: block;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .collection-state {
   margin: 24px 0;
   text-align: center;

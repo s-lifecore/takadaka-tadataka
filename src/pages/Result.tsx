@@ -82,6 +82,9 @@ function DrawingResult({
   const [image, setImage] = useState<string | null>(null)
   const [imagePublicId, setImagePublicId] = useState(savedImagePublicId)
   const [saved, setSaved] = useState(Boolean(savedResult))
+  const [sharing, setSharing] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
+  const [manualShare, setManualShare] = useState(false)
   const requested = useRef(false)
   const distanceKm = useMemo(
     () =>
@@ -130,6 +133,39 @@ function DrawingResult({
     link.href = `data:image/png;base64,${image}`
     link.download = `drawing-${id}.png`
     link.click()
+  }
+
+  const shareTitle = `お題「${theme}」に挑戦！`
+  const shareText = `${shareTitle} AIスコア: ${result?.score ?? 0}点\n歩いて絵を描くゲーム「高々忠敬」 #高々忠敬`
+  const xShareUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText })}`
+
+  const shareArtworkToX = async () => {
+    if (!image || sharing) return
+    setShareMessage('')
+    setManualShare(false)
+    setSharing(true)
+    try {
+      const bytes = Uint8Array.from(atob(image), (character) => character.charCodeAt(0))
+      const file = new File([bytes], `drawing-${id}.png`, { type: 'image/png' })
+      const shareData = { files: [file], text: shareText, title: shareTitle }
+      if (typeof navigator.share === 'function' && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        setManualShare(true)
+        setShareMessage('保存した作品画像を、Xの投稿画面で添付してください。')
+        saveArtwork()
+        window.open(xShareUrl, '_blank', 'noopener,noreferrer')
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setManualShare(true)
+        setShareMessage(
+          '画像を共有できませんでした。「作品を保存する」で保存し、Xで添付してください。',
+        )
+      }
+    } finally {
+      setSharing(false)
+    }
   }
 
   if (judging) {
@@ -207,6 +243,24 @@ function DrawingResult({
         </section>
 
         <footer className="result-actions">
+          {result && saved && (
+            <>
+              <button
+                type="button"
+                className="result-share"
+                disabled={!image || sharing}
+                onClick={() => void shareArtworkToX()}
+              >
+                {sharing ? '共有中…' : 'シェアする'}
+              </button>
+            </>
+          )}
+          {shareMessage && <p role="status">{shareMessage}</p>}
+          {manualShare && (
+            <a className="result-share" href={xShareUrl} target="_blank" rel="noopener noreferrer">
+              Xの投稿画面を開く
+            </a>
+          )}
           <button type="button" className="result-save" disabled={!image} onClick={saveArtwork}>
             作品を保存する
           </button>
