@@ -14,7 +14,11 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
-      allowedHosts: ['.ngrok-free.dev', '.ngrok.app', ...(NGROK_HOST?.trim() ? [NGROK_HOST.trim()] : [])],
+      allowedHosts: [
+        '.ngrok-free.dev',
+        '.ngrok.app',
+        ...(NGROK_HOST?.trim() ? [NGROK_HOST.trim()] : []),
+      ],
       proxy: {
         '/api': {
           target: `http://firebase-emulator:5001/${projectId}/asia-northeast1`,

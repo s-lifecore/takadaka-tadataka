@@ -7,11 +7,11 @@ import { App } from './App'
 import { setAuthTokenGetter } from './lib/api'
 
 function AuthBridge() {
-  const { getToken } = useAuth()
+  const { getToken, isSignedIn } = useAuth()
   useEffect(() => {
-    setAuthTokenGetter(getToken)
+    setAuthTokenGetter(isSignedIn ? getToken : null)
     return () => setAuthTokenGetter(null)
-  }, [getToken])
+  }, [getToken, isSignedIn])
   return null
 }
 

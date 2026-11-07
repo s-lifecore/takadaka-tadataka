@@ -1,6 +1,15 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 let getAuthToken: (() => Promise<string | null>) | null = null
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+  }
+}
+
 export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null) {
   getAuthToken = getter
 }
@@ -18,7 +27,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   })
   const body = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(body?.error ?? `API request failed: ${response.status}`)
+    throw new ApiError(body?.error ?? `API request failed: ${response.status}`, response.status)
   }
   return body as T
 }

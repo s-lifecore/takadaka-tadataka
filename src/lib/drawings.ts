@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest, ApiError } from './api'
 import Dexie, { type Table } from 'dexie'
 import type { AIResult, TrailPoint } from '../types'
 import type { TimerSnapshot } from '../hooks/useTimer'
@@ -41,11 +41,21 @@ function guestHeaders(id: string): Headers {
 }
 
 export async function createDrawing() {
-  const drawing = await apiRequest<{ id: string; guestToken?: string }>('/drawings/create', {
-    method: 'POST',
-  })
-  if (drawing.guestToken) sessionStorage.setItem(guestTokenKey(drawing.id), drawing.guestToken)
-  return drawing.id
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const drawing = await apiRequest<{ id: string; guestToken?: string }>('/drawings/create', {
+        method: 'POST',
+      })
+      if (drawing.guestToken) sessionStorage.setItem(guestTokenKey(drawing.id), drawing.guestToken)
+      return drawing.id
+    } catch (error) {
+      const retryable =
+        error instanceof TypeError || (error instanceof ApiError && error.status >= 500)
+      if (!retryable || attempt === 2) throw error
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+    }
+  }
+  throw new Error('Failed to create drawing')
 }
 
 export async function loadDrawing(id: string) {
@@ -73,4 +83,3 @@ export async function saveResult(id: string, result: AIResult, image: string) {
 export async function loadTrail(id: string): Promise<TrailPoint[]> {
   return (await loadDrawing(id)).trail ?? []
 }
-

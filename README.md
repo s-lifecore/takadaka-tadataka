@@ -223,7 +223,21 @@ CLOUDINARY_UPLOAD_PRESET=...
 make up
 ```
 
-`make up`は`.env.prev.local`の`FIREBASE_PROJECT_ID`と`functions/.env.prev.local`を読み込み、Docker Compose内でFirebase Emulator、FunctionsのTypeScript監視ビルド、Viteを同時に起動します。ホスト側のNode.js、Firebase CLI、Javaは不要です。
+ngrokを使った確認は、次のMakeターゲットを使用できます。Docker Composeをバックグラウンドで起動し、Functions APIが応答可能になるまで待ってからngrokを開始します。ngrokを終了するとComposeも停止します。
+
+同じエンドポイントのngrokがすでに起動している場合は、先にそのターミナルで`Ctrl+C`を押して終了してください。`make up`と`make ngrok`を同時に実行する必要はありません。
+
+```bash
+# Vite開発サーバーを公開
+make ngrok
+
+# Hosting Emulatorを公開
+make ngrok-hosting
+```
+
+ngrokのHTTPS URLをスマートフォンで開いて確認します。手動でポートを指定する場合は`make ngrok NGROK_PORT=5051`のように実行します。
+
+`make up`は`.env.prev.local`の`FIREBASE_PROJECT_ID`と`functions/.env.prev.local`を読み込み、Docker Compose内でFirebase Emulator、FunctionsのTypeScript監視ビルド、Viteを起動します。ViteはFunctions APIが応答可能になってから起動するため、起動直後に`/playalone`から開始してもゲーム開始APIを先に呼び出しません。ホスト側のNode.js、Firebase CLI、Javaは不要です。
 
 起動時にFunctions用の環境ファイルからEmulator専用の`functions/.secret.local`をコンテナ内で生成します。このファイルはGitに含めず、ローカルのSecret Manager代わりに使用します。
 

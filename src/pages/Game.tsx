@@ -55,7 +55,8 @@ function StartCountdown() {
       (drawingId) => {
         if (active && countdownFinished) navigate(`/map/${drawingId}`, { replace: true })
       },
-      () => {
+      (reason: unknown) => {
+        console.error('ゲーム開始APIに失敗しました。', reason)
         if (active)
           setError('ゲームを開始できませんでした。通信環境を確認して、もう一度お試しください。')
       },

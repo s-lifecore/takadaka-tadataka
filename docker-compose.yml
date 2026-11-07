@@ -45,6 +45,7 @@ services:
       - firebase-emulator
     command: >-
       sh -c "npm ci && npm run build &&
+      until node -e \"fetch('http://firebase-emulator:5001/' + process.env.FIREBASE_PROJECT_ID + '/asia-northeast1/api/drawings/not-found').then((response) => process.exit(response.status === 404 ? 0 : 1)).catch(() => process.exit(1))\"; do sleep 1; done &&
       npm run dev -- --host 0.0.0.0 --mode $${VITE_MODE:-prev}"
 
 volumes:
